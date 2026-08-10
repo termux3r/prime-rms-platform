@@ -1,10 +1,10 @@
-<?= $this->extend('layouts/app') ?>
+<?= $this->extend(($isKiosk ?? false) ? 'layouts/guest' : 'layouts/app') ?>
 
 <?= $this->section('head') ?>
 <style>
   .pos-shell {
     display: grid;
-    grid-template-columns: 1fr 380px;
+    grid-template-columns: minmax(0, 1fr) 320px;
     gap: 0;
     min-height: calc(100vh - 72px);
   }
@@ -101,7 +101,7 @@
 
   .menu-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 16px;
   }
 
@@ -166,6 +166,12 @@
     font-size: 16px;
     font-weight: 600;
     color: var(--ink-primary);
+  }
+
+  /* Invalid table selection (kiosk) */
+  .table-select.is-invalid {
+    border-color: var(--accent-rust);
+    box-shadow: 0 0 0 3px var(--accent-rust-soft);
   }
 
   .menu-card-add {
@@ -400,25 +406,171 @@
     }
   }
 
-  @media (max-width: 640px) {
-    .pos-menu-pane { padding: 16px; }
+@media (max-width: 640px) {
+    .pos-shell { flex-direction: column; }
     .menu-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
     .pos-topbar { flex-direction: column; align-items: stretch; }
     .pos-topbar-left { justify-content: space-between; }
     .table-select { flex: 1; min-width: 0; }
   }
+
+  /* Cashier station (staff only): fill the content area */
+  .billing-stage {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 104px);
+  }
+
+  .billing-stage .billing-queue {
+    flex: 1;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .billing-stage .bq-body {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  /* Billing queue */
+  .billing-queue {
+    margin: 24px 0 0;
+    padding: 20px;
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+  }
+
+  .bq-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+
+  .bq-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .bq-card {
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    background: var(--surface-raised);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .bq-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .bq-order-id { font-weight: 700; color: var(--ink-primary); }
+  .bq-table { color: var(--ink-secondary); font-size: 13px; }
+  .bq-items { font-size: 13px; color: var(--ink-secondary); }
+  .bq-total { font-family: var(--font-mono); font-size: 15px; font-weight: 600; }
+
+  .bq-empty {
+    color: var(--ink-secondary);
+    padding: 24px 0;
+    text-align: center;
+  }
+
+  /* Billing modal */
+  .billing-modal { max-width: 520px; width: 100%; }
+
+  .bm-meta {
+    display: flex;
+    gap: 20px;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    margin-bottom: 16px;
+    color: var(--ink-secondary);
+  }
+
+  .bm-items { margin-bottom: 12px; }
+
+  .bm-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .bm-line:last-child { border-bottom: none; }
+  .bm-line .bm-line-info { display: flex; flex-direction: column; gap: 2px; }
+  .bm-line .bm-line-name { font-weight: 500; color: var(--ink-primary); }
+  .bm-line .bm-line-qty { font-size: 12px; color: var(--ink-secondary); }
+  .bm-line .bm-line-price { white-space: nowrap; }
+
+  .bm-totals { font-family: var(--font-mono); }
+  .bm-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 14px;
+  }
+  .bm-row.total {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    border-top: 1px dashed var(--border-strong);
+    margin-top: 8px;
+    padding-top: 12px;
+  }
+
+  .bm-payment { margin-top: 20px; }
+  .bm-payment-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink-primary);
+    margin-bottom: 12px;
+  }
+  .bm-methods { display: flex; gap: 10px; }
+  .bm-method {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    border: 2px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .bm-method input { margin-bottom: 6px; accent-color: var(--accent-sulfur); }
+  .bm-method:has(input:checked) {
+    border-color: var(--accent-sulfur);
+    background: var(--accent-sulfur-soft, rgba(181,138,18,.12));
+  }
 </style>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
+
+<!-- ===== Kiosk ordering (public) ===== -->
+<?php if ($isKiosk ?? false): ?>
 <div class="pos-shell">
   <!-- Menu Pane -->
   <section class="pos-menu-pane" role="region" aria-label="Menu items">
     <div class="pos-topbar">
       <div class="pos-topbar-left">
         <div>
-          <div class="eyebrow">Point of Sale</div>
-          <h1 class="page-title" style="margin: 0;">New Order</h1>
+          <div class="eyebrow"><?= ($isKiosk ?? false) ? 'Welcome' : 'Point of Sale' ?></div>
+          <h1 class="page-title" style="margin: 0;"><?= ($isKiosk ?? false) ? 'Order at your table' : 'New Order' ?></h1>
         </div>
         <div class="table-select-wrapper">
           <label for="tableSelect">Table</label>
@@ -427,6 +579,7 @@
           </select>
         </div>
       </div>
+      <?php if (! ($isKiosk ?? false)): ?>
       <div class="pos-topbar-right">
         <span class="status-badge badge-available" id="connectionBadge">
           <span class="dot"></span> Online
@@ -435,6 +588,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
         </button>
       </div>
+      <?php endif; ?>
     </div>
 
     <div class="category-tabs" id="categoryTabs" role="tablist" aria-label="Menu categories">
@@ -484,6 +638,84 @@
     </footer>
   </aside>
 </div>
+<?php endif; ?>
+
+<!-- ===== Cashier station (staff only): billing queue, full width/height ===== -->
+<?php if (! ($isKiosk ?? false)): ?>
+<div class="billing-stage">
+<section class="billing-queue" id="billingQueue" aria-label="Orders ready for payment">
+  <header class="bq-header">
+    <div>
+      <div class="eyebrow">Billing</div>
+      <h2 class="page-title" style="margin: 0;">Orders Ready for Payment</h2>
+      <p class="page-subtitle" style="margin: 4px 0 0;">Served or completed orders awaiting checkout</p>
+    </div>
+    <button class="btn btn-secondary" type="button" id="bqRefreshBtn">Refresh</button>
+  </header>
+  <div class="bq-body" id="bqBody">
+    <div class="bq-empty" id="bqEmpty">
+      <p>No orders awaiting payment.</p>
+    </div>
+    <div class="bq-grid" id="bqGrid"></div>
+  </div>
+</section>
+
+<!-- Billing modal -->
+<div class="modal-overlay" id="billingModal" role="dialog" aria-modal="true" aria-labelledby="billingModalTitle" hidden style="z-index: 12000; display: none;">
+  <div class="modal billing-modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="billingModalTitle">Order Payment</h2>
+      <button class="modal-close" id="billingModalClose" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="bm-meta">
+        <span>Order <strong id="bmOrderId">#--</strong></span>
+        <span>Table <strong id="bmTableNumber">--</strong></span>
+      </div>
+      <div class="bm-items" id="bmItems">
+        <!-- Lines rendered by JS -->
+      </div>
+      <hr class="receipt-divider">
+      <div class="bm-totals">
+        <div class="bm-row">
+          <span>Subtotal</span>
+          <span id="bmSubtotal">ETB 0.00</span>
+        </div>
+        <div class="bm-row">
+          <span>Tax (15%)</span>
+          <span id="bmTax">ETB 0.00</span>
+        </div>
+        <div class="bm-row total">
+          <span>Grand Total</span>
+          <span id="bmGrandTotal">ETB 0.00</span>
+        </div>
+      </div>
+      <div class="bm-payment">
+        <h3 class="bm-payment-title">Payment Method</h3>
+        <div class="bm-methods">
+          <label class="bm-method">
+            <input type="radio" name="bmMethod" value="cash" checked>
+            <span>Cash</span>
+          </label>
+          <label class="bm-method">
+            <input type="radio" name="bmMethod" value="card">
+            <span>Card</span>
+          </label>
+          <label class="bm-method">
+            <input type="radio" name="bmMethod" value="mobile">
+            <span>Mobile</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" type="button" id="bmCancelBtn">Cancel</button>
+      <button class="btn btn-primary" type="button" id="bmConfirmBtn">Confirm Payment</button>
+    </div>
+  </div>
+</div>
+</div>
+<?php endif; ?>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
@@ -491,6 +723,7 @@
 <script>
   (function () {
     // State
+    const isKiosk = <?= ($isKiosk ?? false) ? 'true' : 'false' ?>;
     let allMenuItems = [];
     let allCategories = [];
     let allTables = [];
@@ -533,11 +766,14 @@
     }
 
     function setConnectionStatus(online) {
+      if (!connectionBadge) return;
       connectionBadge.className = 'status-badge ' + (online ? 'badge-available' : 'badge-occupied');
       connectionBadge.querySelector('.status-text')?.remove();
       connectionBadge.innerHTML = '<span class="dot"></span> ' + (online ? 'Online' : 'Offline');
     }
 
+    // ===== Kiosk POS (menu grid + cart) — staff cashier view hides this =====
+    if (isKiosk) {
     // Load data
     async function loadInitialData() {
       try {
@@ -715,7 +951,7 @@
     }
 
     async function addItemToExistingOrder(itemId) {
-      const item = allMenuItems.find(i => i.id === itemId);
+      const item = allMenuItems.find(i => Number(i.id) === itemId);
       if (!item) return;
 
       try {
@@ -754,7 +990,7 @@
     }
 
     async function updateQuantity(itemId, delta) {
-      const line = cart.find(c => c.id === itemId);
+      const line = cart.find(c => Number(c.id) === itemId);
       if (!line) return;
 
       const newQty = line.quantity + delta;
@@ -776,7 +1012,7 @@
     }
 
     async function removeFromCart(itemId) {
-      const line = cart.find(c => c.id === itemId);
+      const line = cart.find(c => Number(c.id) === itemId);
       if (!line) return;
 
       try {
@@ -879,6 +1115,12 @@
     }
 
     async function checkout() {
+      if (!tableSelect.value) {
+        tableSelect.classList.add('is-invalid');
+        toast.warning('Select Table', 'Please select a table before checking out');
+        tableSelect.focus();
+        return;
+      }
       if (!currentOrderId || !cart.length) return;
 
       try {
@@ -917,14 +1159,166 @@
     tableSelect.addEventListener('change', () => {
       // If table changed and no order yet, that's fine
       // If order exists, table is locked anyway
+      tableSelect.classList.remove('is-invalid');
     });
 
     clearCartBtn.addEventListener('click', clearCart);
     checkoutBtn.addEventListener('click', checkout);
-    reloadMenuBtn.addEventListener('click', loadMenuItems);
+    if (reloadMenuBtn) reloadMenuBtn.addEventListener('click', loadMenuItems);
 
-    // Initialize
     loadInitialData();
+    } // end kiosk POS block
+
+    // ===== Cashier billing queue + payment modal (staff only) =====
+    if (!isKiosk) {
+      // ===== Billing queue + payment modal (staff only) =====
+      const billingQueue = document.getElementById('billingQueue');
+    const bqBody = document.getElementById('bqBody');
+    const bqEmpty = document.getElementById('bqEmpty');
+    const bqGrid = document.getElementById('bqGrid');
+    const bqRefreshBtn = document.getElementById('bqRefreshBtn');
+
+    const billingModal = document.getElementById('billingModal');
+    const bmCloseBtn = document.getElementById('billingModalClose');
+    const bmCancelBtn = document.getElementById('bmCancelBtn');
+    const bmConfirmBtn = document.getElementById('bmConfirmBtn');
+    const bmOrderId = document.getElementById('bmOrderId');
+    const bmTableNumber = document.getElementById('bmTableNumber');
+    const bmItems = document.getElementById('bmItems');
+    const bmSubtotal = document.getElementById('bmSubtotal');
+    const bmTax = document.getElementById('bmTax');
+    const bmGrandTotal = document.getElementById('bmGrandTotal');
+
+    let billingOrderId = null;
+
+    function openBillingModal() {
+      billingModal.hidden = false;
+      billingModal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeBillingModal() {
+      billingModal.hidden = true;
+      billingModal.style.display = 'none';
+      document.body.style.overflow = '';
+      billingOrderId = null;
+    }
+
+    async function loadBillingQueue() {
+      try {
+        const data = await api.get('/orders', { status: 'served,completed', per_page: 100 });
+        const orders = data.data?.orders || data.data || [];
+
+        bqGrid.innerHTML = '';
+        if (!orders.length) {
+          bqEmpty.hidden = false;
+          bqGrid.hidden = true;
+          return;
+        }
+
+        bqEmpty.hidden = true;
+        bqGrid.hidden = false;
+
+        orders.forEach(order => {
+          const itemCount = (order.items || []).reduce((s, it) => s + Number(it.quantity || 0), 0);
+          const card = document.createElement('div');
+          card.className = 'bq-card';
+          card.innerHTML = `
+            <div class="bq-card-top">
+              <span class="bq-order-id">Order #${escapeHtml(order.id)}</span>
+              <span class="bq-table">Table ${escapeHtml(order.table_number || order.table_id)}</span>
+            </div>
+            <div class="bq-items">${itemCount} item${itemCount === 1 ? '' : 's'} · ${escapeHtml(order.status)}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <span class="bq-total">${formatMoney(order.total_amount)}</span>
+              <button class="btn btn-primary" type="button" data-pay-order="${escapeHtml(order.id)}">Pay</button>
+            </div>
+          `;
+          bqGrid.appendChild(card);
+        });
+
+        bqGrid.querySelectorAll('[data-pay-order]').forEach(btn => {
+          btn.addEventListener('click', () => openBillForOrder(btn.dataset.payOrder));
+        });
+      } catch (error) {
+        console.error('Failed to load billing queue:', error);
+        toast.error('Error', 'Failed to load billing queue: ' + error.message);
+      }
+    }
+
+    async function openBillForOrder(orderId) {
+      try {
+        billingOrderId = orderId;
+        const data = await api.get(`/orders/${orderId}/bill`);
+        const summary = data.data || data;
+
+        bmOrderId.textContent = '#' + summary.order_id;
+        bmTableNumber.textContent = summary.table_id || '--';
+
+        bmItems.innerHTML = (summary.items || []).map(item => {
+          const qty = Number(item.quantity);
+          const price = Number(item.unit_price);
+          return `
+            <div class="bm-line">
+              <div class="bm-line-info">
+                <span class="bm-line-name">${escapeHtml(item.menu_item_name || item.name || 'Item')}</span>
+                <span class="bm-line-qty">${qty} × ${formatMoney(price)}</span>
+              </div>
+              <span class="bm-line-price">${formatMoney(qty * price)}</span>
+            </div>
+          `;
+        }).join('');
+
+        bmSubtotal.textContent = formatMoney(summary.subtotal);
+        bmTax.textContent = formatMoney(summary.tax);
+        bmGrandTotal.textContent = formatMoney(summary.grand_total);
+
+        openBillingModal();
+      } catch (error) {
+        console.error('Failed to load bill:', error);
+        toast.error('Error', 'Failed to load bill: ' + error.message);
+      }
+    }
+
+    async function confirmPayment() {
+      if (!billingOrderId) return;
+
+      const methodEl = document.querySelector('input[name="bmMethod"]:checked');
+      const method = methodEl ? methodEl.value : 'cash';
+
+      bmConfirmBtn.disabled = true;
+      bmConfirmBtn.textContent = 'Processing...';
+
+      try {
+        const data = await api.post(`/orders/${billingOrderId}/pay`, { payment_method: method });
+        const result = data.data || data;
+        const paid = result.bill || result;
+        toast.success('Payment Complete', `Order #${billingOrderId} paid: ${formatMoney(paid.total_amount)} (${method})`);
+
+        closeBillingModal();
+        await loadBillingQueue();
+      } catch (error) {
+        console.error('Payment failed:', error);
+        toast.error('Payment Failed', error.message);
+      } finally {
+        bmConfirmBtn.disabled = false;
+        bmConfirmBtn.textContent = 'Confirm Payment';
+      }
+    }
+
+    bqRefreshBtn.addEventListener('click', loadBillingQueue);
+    bmCloseBtn.addEventListener('click', closeBillingModal);
+    bmCancelBtn.addEventListener('click', closeBillingModal);
+    bmConfirmBtn.addEventListener('click', confirmPayment);
+    billingModal.addEventListener('click', (e) => {
+      if (e.target === billingModal) closeBillingModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (!billingModal.hidden && e.key === 'Escape') closeBillingModal();
+    });
+
+    loadBillingQueue();
+    } // end staff-only billing block
   })();
 </script>
 <?= $this->endSection() ?>

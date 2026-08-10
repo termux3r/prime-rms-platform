@@ -21,6 +21,10 @@
       <span>Tables</span>
       <small>Floor</small>
     </a>
+    <a class="nav-link <?= current_url(true)->getSegment(1) === 'kitchen' ? 'active' : '' ?>" href="<?= base_url('kitchen') ?>">
+      <span>Kitchen</span>
+      <small>KDS</small>
+    </a>
     <a class="nav-link <?= current_url(true)->getSegment(1) === 'reports' ? 'active' : '' ?>" href="<?= base_url('reports') ?>">
       <span>Reports</span>
       <small>Sales</small>

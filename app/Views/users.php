@@ -193,6 +193,13 @@
     color: var(--ink-secondary);
   }
 
+  .toolbar-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+  }
+
   @media (max-width: 640px) {
     .users-header { flex-direction: column; align-items: stretch; }
     .users-header-left { justify-content: space-between; }
@@ -346,7 +353,7 @@
 </div>
 
 <!-- Reset Password Modal -->
-<div class="modal-overlay" id="resetPasswordModal" role="dialog" aria-modal="true" aria-labelledby="resetPasswordModalTitle" hidden>
+<div class="modal-overlay" id="resetPasswordModal" role="dialog" aria-modal="true" aria-labelledby="resetPasswordModalTitle" hidden style="z-index: 12000;">
   <div class="modal" style="max-width: 420px;">
     <div class="modal-header">
       <h2 class="modal-title" id="resetPasswordModalTitle">Reset Password</h2>
@@ -394,9 +401,6 @@
         { id: 'edit', title: 'Edit', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>', handler: editUser },
         { id: 'toggle-status', title: 'Toggle Status', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>', handler: toggleUserStatus },
         { id: 'reset-password', title: 'Reset Password', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>', handler: resetUserPassword }
-      ],
-      toolbarActions: [
-        { id: 'addUser', label: 'Add User', class: 'btn-primary', onClick: openAddUserModal }
       ],
       filtersConfig: {
         status: {
@@ -454,8 +458,14 @@
     const userModalCancel = document.getElementById('userModalCancel');
     const userModalSave = document.getElementById('userModalSave');
 
+    // Ensure modals are visually hidden on init (CSS uses display:flex which
+    // overrides the hidden attribute)
+    userModal.hidden = true;
+    userModal.style.display = 'none';
+
     function closeUserModal() {
       userModal.hidden = true;
+      userModal.style.display = 'none';
       document.body.style.overflow = '';
       userForm.reset();
     }
@@ -467,6 +477,7 @@
       passwordGroup.style.display = 'block';
       userPassword.required = true;
       userModal.hidden = false;
+      userModal.style.display = 'flex';
       document.body.style.overflow = 'hidden';
       userName.focus();
     }
@@ -487,6 +498,7 @@
         userPassword.required = false;
 
         userModal.hidden = false;
+        userModal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
         userName.focus();
       } catch (error) {
@@ -539,6 +551,9 @@
     }
 
     // Event listeners for user modal
+    const addUserBtn = document.getElementById('addUserBtn');
+    if (addUserBtn) addUserBtn.addEventListener('click', openAddUserModal);
+
     userModalClose.addEventListener('click', closeUserModal);
     userModalCancel.addEventListener('click', closeUserModal);
     userModalSave.addEventListener('click', saveUser);
@@ -587,8 +602,13 @@
     const resetPasswordModalCancel = document.getElementById('resetPasswordModalCancel');
     const resetPasswordModalSave = document.getElementById('resetPasswordModalSave');
 
+    // Ensure reset modal is visually hidden on init
+    resetPasswordModal.hidden = true;
+    resetPasswordModal.style.display = 'none';
+
     function closeResetPasswordModal() {
       resetPasswordModal.hidden = true;
+      resetPasswordModal.style.display = 'none';
       document.body.style.overflow = '';
       resetPasswordForm.reset();
     }
@@ -605,6 +625,7 @@
         resetPasswordConfirm.value = '';
 
         resetPasswordModal.hidden = false;
+        resetPasswordModal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
         resetPassword.focus();
       } catch (error) {

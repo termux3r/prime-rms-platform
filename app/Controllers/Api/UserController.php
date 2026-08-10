@@ -56,7 +56,7 @@ class UserController extends BaseController
         return $this->respond([
             'status' => 'success',
             'data'   => [
-                'users' => $users,
+                'items' => $users,
                 'pager' => $pager ? $pager->getDetails() : null,
             ],
         ]);

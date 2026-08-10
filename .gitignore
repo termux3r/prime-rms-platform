@@ -8,3 +8,4 @@ writable/session/*
 !writable/session/index.html
 public/uploads/menu-items/*
 !public/uploads/menu-items/.gitkeep
+writable/debugbar/*

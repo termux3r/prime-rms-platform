@@ -52,10 +52,10 @@ class DataTable {
 
   renderToolbar() {
     const { searchable, filterable } = this.options;
-    let html = '<div class="toolbar">';
+    let controls = '';
 
     if (searchable) {
-      html += `
+      controls += `
         <div class="toolbar-search">
           <input type="search" class="form-input" id="${this.options.container}-search"
             placeholder="Search..." aria-label="Search">
@@ -64,10 +64,10 @@ class DataTable {
     }
 
     if (filterable && Object.keys(this.options.filtersConfig).length) {
-      html += '<div class="toolbar-filters">';
+      controls += '<div class="toolbar-filters d-flex gap-2">';
       for (const [key, config] of Object.entries(this.options.filtersConfig)) {
         if (config.type === 'select') {
-          html += `
+          controls += `
             <select class="form-select" id="${this.options.container}-filter-${key}" aria-label="${config.label}">
               <option value="">All ${config.label}</option>
               ${config.options.map(opt => `<option value="${opt.value}">${opt.label}</option>`).join('')}
@@ -75,7 +75,12 @@ class DataTable {
           `;
         }
       }
-      html += '</div>';
+      controls += '</div>';
+    }
+
+    let html = '<div class="toolbar">';
+    if (controls) {
+      html += `<div class="toolbar-controls">${controls}</div>`;
     }
 
     if (this.options.toolbarActions.length) {

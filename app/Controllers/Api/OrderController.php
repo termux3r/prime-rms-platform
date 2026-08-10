@@ -82,7 +82,8 @@ class OrderController extends BaseController
         $data = $this->request->getJSON(true) ?? $this->request->getPost();
 
         $tableId   = $data['table_id'] ?? null;
-        $cashierId = $this->request->userId ?? $data['cashier_id'] ?? null;
+        $cashierId = $this->request->userId ?? $data['cashier_id'] ?? $this->kioskCashierId();
+        $items     = $data['items'] ?? $data['cartItems'] ?? [];
 
         if (! $tableId || ! $cashierId) {
             return $this->respond([
@@ -92,7 +93,7 @@ class OrderController extends BaseController
         }
 
         try {
-            $order = $this->orderService->createOrder((int) $tableId, (int) $cashierId);
+            $order = $this->orderService->createOrder((int) $tableId, (int) $cashierId, $items);
             return $this->respond([
                 'status' => 'success',
                 'data'   => $order,
@@ -231,6 +232,65 @@ class OrderController extends BaseController
                 'message' => $e->getMessage(),
             ], $e->getCode() ?: 500);
         }
+    }
+
+    /**
+     * PATCH /api/v1/orders/{id}/status - Update order status (kitchen workflow)
+     */
+    public function updateStatus(int $id): ResponseInterface
+    {
+        $data = $this->request->getJSON(true) ?? $this->request->getPost();
+
+        $newStatus = $data['status'] ?? null;
+
+        if (! $newStatus) {
+            return $this->respond([
+                'status'  => 'error',
+                'message' => 'status is required',
+            ], 422);
+        }
+
+        try {
+            $order = $this->orderService->updateOrderStatus($id, $newStatus);
+            return $this->respond([
+                'status' => 'success',
+                'data'   => $order,
+                'message' => 'Order status updated',
+            ]);
+        } catch (\RuntimeException $e) {
+            return $this->respond([
+                'status'  => 'error',
+                'message' => $e->getMessage(),
+            ], $e->getCode() ?: 500);
+        }
+    }
+
+    /**
+     * Resolve the cashier for an unauthenticated (public kiosk) order.
+     * Prefers the dedicated "kiosk" account; falls back to the lowest-id active
+     * staff account so the operation succeeds even before the seed migration.
+     */
+    protected function kioskCashierId(): int
+    {
+        $model = new \App\Models\UserModel();
+
+        $kiosk = $model->where('username', 'kiosk')->where('status', 'active')->first();
+        if ($kiosk) {
+            return (int) $this->userKey($kiosk, 'id');
+        }
+
+        $fallback = $model->whereIn('role', ['admin', 'cashier'])->where('status', 'active')->orderBy('id', 'asc')->first();
+
+        return $fallback ? (int) $this->userKey($fallback, 'id') : 0;
+    }
+
+    /**
+     * Read a field from either an App\Entities\User object (default model
+     * returnType) or an array result, whichever the model returns.
+     */
+    protected function userKey(\App\Entities\User|array $user, string $key): mixed
+    {
+        return is_array($user) ? ($user[$key] ?? null) : ($user->{$key} ?? null);
     }
 
     protected function respond(array $data, int $status = 200): ResponseInterface

@@ -13,6 +13,7 @@ class Filters extends BaseConfig
     public array $aliases = [
         'csrf'     => \CodeIgniter\Filters\CSRF::class,
         'jwtauth'  => \App\Filters\JwtAuthFilter::class,
+        'webauth'  => \App\Filters\WebAuthFilter::class,
         'role'     => \App\Filters\RoleFilter::class,
         'throttle' => \App\Filters\ThrottleFilter::class,
     ];

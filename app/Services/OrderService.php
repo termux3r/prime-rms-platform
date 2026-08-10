@@ -35,20 +35,31 @@ class OrderService
 
     /**
      * Create a new order for a table, mark table as occupied.
+     * Optionally accepts an initial items array [{menu_item_id, quantity}] in the same transaction.
      */
-    public function createOrder(int $tableId, int $cashierId): array
+    public function createOrder(int $tableId, int $cashierId, array $items = []): array
     {
         $this->db->transStart();
 
-        // Check if table already has an active order
+        // Check if table already has an in-progress order.
+        // Final/locked statuses (completed, paid, cancelled) do NOT block a fresh order.
+        $activeStatuses = ['pending', 'preparing', 'ready', 'served'];
         $existingOrder = $this->orderModel
             ->where('table_id', $tableId)
-            ->whereIn('status', ['pending', 'completed'])
+            ->whereIn('status', $activeStatuses)
             ->first();
 
         if ($existingOrder) {
-            $this->db->transRollback();
-            throw new RuntimeException('Table already has an active order', 409);
+            // If items were supplied, append them to the existing active order.
+            if ($items) {
+                $this->addItems($existingOrder['id'], $items);
+                $this->db->transComplete();
+                return $this->getOrderWithItems((int) $existingOrder['id']);
+            }
+            // Reuse the existing active order rather than blocking: the frontend
+            // may attempt to create a new order for a table that already has one.
+            $this->db->transComplete();
+            return $this->getOrderWithItems((int) $existingOrder['id']);
         }
 
         $orderId = $this->orderModel->insert([
@@ -66,13 +77,50 @@ class OrderService
         // Mark table as occupied
         $this->tableStateService->markOccupied($tableId);
 
+        // Insert initial items if provided
+        if ($items) {
+            $this->addItems($orderId, $items);
+        }
+
         $this->db->transComplete();
 
         if ($this->db->transStatus() === false) {
             throw new RuntimeException('Failed to create order', 500);
         }
 
-        return $this->orderModel->find($orderId);
+        return $this->getOrderWithItems($orderId);
+    }
+
+    /**
+     * Insert multiple order_items rows for an order and recalc the total.
+     * Assumes a transaction is already open (or opened by caller).
+     */
+    protected function addItems(int $orderId, array $items): void
+    {
+        foreach ($items as $line) {
+            $menuItemId = $line['menu_item_id'] ?? $line['id'] ?? null;
+            $quantity   = (int) ($line['quantity'] ?? 1);
+
+            if (! $menuItemId || $quantity <= 0) {
+                continue;
+            }
+
+            $menuItem = $this->menuItemModel->find($menuItemId);
+            if (! $menuItem || $menuItem['status'] !== 'active') {
+                continue;
+            }
+
+            $unitPrice = $menuItem['price'];
+            $this->orderItemModel->insert([
+                'order_id'     => $orderId,
+                'menu_item_id' => $menuItemId,
+                'quantity'     => $quantity,
+                'unit_price'   => $unitPrice,
+                'subtotal'     => $unitPrice * $quantity,
+            ]);
+        }
+
+        $this->recalculateTotal($orderId);
     }
 
     /**
@@ -340,10 +388,11 @@ class OrderService
             throw new RuntimeException('Order not found', 404);
         }
 
-        // Single join query for items + menu item names
+        // Single join query for items + menu item names.
+        // LEFT JOIN so line items survive even if a menu_item was soft-deleted/inactive.
         $items = $this->orderItemModel
-            ->select('order_items.*, menu_items.name as menu_item_name')
-            ->join('menu_items', 'menu_items.id = order_items.menu_item_id')
+            ->select('order_items.*, menu_items.name as menu_item_name, menu_items.image as menu_item_image')
+            ->join('menu_items', 'menu_items.id = order_items.menu_item_id', 'left')
             ->where('order_items.order_id', $orderId)
             ->findAll();
 
@@ -359,7 +408,12 @@ class OrderService
         $builder = $this->orderModel->builder();
 
         if (! empty($filters['status'])) {
-            $builder->where('status', $filters['status']);
+            $statuses = array_map('trim', explode(',', $filters['status']));
+            if (count($statuses) === 1) {
+                $builder->where('status', $statuses[0]);
+            } else {
+                $builder->whereIn('status', $statuses);
+            }
         }
         if (! empty($filters['table_id'])) {
             $builder->where('table_id', $filters['table_id']);
@@ -371,14 +425,94 @@ class OrderService
             $builder->where('created_at <=', $filters['date_to'] . ' 23:59:59');
         }
 
-        $builder->orderBy('created_at', 'DESC');
+        // FIFO kitchen queue: oldest orders first. Newest appear at the bottom.
+        $builder->orderBy('created_at', 'ASC');
 
         $orders = $this->orderModel->paginate($perPage, 'default', $page);
         $pager  = $this->orderModel->pager;
+
+        // Eager-load line items (with menu item names) for every order - single query, no N+1
+        $orderIds = array_column($orders, 'id');
+        if ($orderIds) {
+            $items = $this->orderItemModel
+                ->select('order_items.*, menu_items.name as menu_item_name, menu_items.image as menu_item_image')
+                ->join('menu_items', 'menu_items.id = order_items.menu_item_id', 'left')
+                ->whereIn('order_items.order_id', $orderIds)
+                ->orderBy('order_items.id', 'ASC')
+                ->findAll();
+
+            $grouped = [];
+            foreach ($items as $item) {
+                $grouped[$item['order_id']][] = $item;
+            }
+            foreach ($orders as &$order) {
+                $order['items'] = $grouped[$order['id']] ?? [];
+            }
+            unset($order);
+        }
 
         return [
             'orders' => $orders,
             'pager'  => $pager ? $pager->getDetails() : null,
         ];
+    }
+
+    /**
+     * Update order status with kitchen lifecycle transitions.
+     * Valid transitions: pending -> preparing -> ready -> served -> completed
+     */
+    public function updateOrderStatus(int $orderId, string $newStatus): array
+    {
+        $validStatuses = ['pending', 'preparing', 'ready', 'served', 'completed', 'paid', 'cancelled'];
+        if (! in_array($newStatus, $validStatuses, true)) {
+            throw new RuntimeException('Invalid status', 422);
+        }
+
+        // Allowed transitions
+        $transitions = [
+            'pending'   => ['preparing', 'cancelled'],
+            'preparing' => ['ready', 'pending'],
+            'ready'     => ['served', 'preparing'],
+            'served'    => ['completed', 'ready'],
+            'completed' => ['paid'],
+        ];
+
+        $this->db->transStart();
+
+        $order = $this->orderModel->find($orderId);
+        if (! $order) {
+            $this->db->transRollback();
+            throw new RuntimeException('Order not found', 404);
+        }
+
+        $currentStatus = $order['status'];
+
+        // Allow same status (idempotent)
+        if ($currentStatus === $newStatus) {
+            $this->db->transComplete();
+            return $this->getOrderWithItems($orderId);
+        }
+
+        // Validate transition
+        $allowed = $transitions[$currentStatus] ?? [];
+        if (! in_array($newStatus, $allowed, true)) {
+            $this->db->transRollback();
+            throw new RuntimeException("Cannot transition from {$currentStatus} to {$newStatus}", 409);
+        }
+
+$this->orderModel->update($orderId, ['status' => $newStatus]);
+
+        // If order is completed, mark table as available (exclude this order from active check)
+        if ($newStatus === 'completed') {
+            $this->tableStateService->markAvailable($order['table_id'], $orderId);
+        }
+
+        $this->db->transComplete();
+
+        if ($this->db->transStatus() === false) {
+            throw new RuntimeException('Failed to update order status', 500);
+        }
+
+        return $this->getOrderWithItems($orderId);
     }
 }
