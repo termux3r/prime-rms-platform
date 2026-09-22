@@ -24,6 +24,8 @@ class AuthApiTest extends CIUnitTestCase
 
     protected function tearDown(): void
     {
+        $db = \Config\Database::connect('tests');
+        $db->table('refresh_tokens')->where('id >', 0)->delete();
         $this->userModel->where('id >', 0)->delete();
         parent::tearDown();
     }
@@ -146,17 +148,17 @@ class AuthApiTest extends CIUnitTestCase
         $refreshJson = $refreshResponse->getJSON();
         $refreshToken2 = $refreshJson->data->refresh_token;
 
-        // Old refresh token should be revoked
-        $reuseResponse = $this->call('POST', '/api/v1/auth/refresh', [
-            'refresh_token' => $refreshToken1,
-        ]);
-        $reuseResponse->assertStatus(401);
-
         // New token should work
         $response = $this->call('POST', '/api/v1/auth/refresh', [
             'refresh_token' => $refreshToken2,
         ]);
         $response->assertStatus(200);
+
+        // Old refresh token should be revoked (and triggers reuse detection)
+        $reuseResponse = $this->call('POST', '/api/v1/auth/refresh', [
+            'refresh_token' => $refreshToken1,
+        ]);
+        $reuseResponse->assertStatus(401);
     }
 
     public function testLogout(): void
@@ -218,7 +220,7 @@ class AuthApiTest extends CIUnitTestCase
         $this->assertEquals('success', $json->status);
         $this->assertEquals('meuser', $json->data->username);
         $this->assertEquals('admin', $json->data->role);
-        $this->assertNull($json->data->password_hash); // Should be hidden
+        $this->assertNull($json->data->password_hash ?? null); // Should be hidden
     }
 
     public function testHealthEndpoint(): void

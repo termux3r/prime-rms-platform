@@ -9,3 +9,5 @@ writable/session/*
 public/uploads/menu-items/*
 !public/uploads/menu-items/.gitkeep
 writable/debugbar/*
+.phpunit.result.cache
+.continue/
