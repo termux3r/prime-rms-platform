@@ -11,3 +11,4 @@ public/uploads/menu-items/*
 writable/debugbar/*
 .phpunit.result.cache
 .continue/
+.vercel
