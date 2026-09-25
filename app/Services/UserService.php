@@ -30,6 +30,8 @@ class UserService
     {
         $this->db->transStart();
 
+        $data['status'] = $data['status'] ?? 'active';
+        $data['role']   = $data['role'] ?? 'cashier';
         $data['password_hash'] = password_hash($data['password'] ?? 'ChangeMe123!', PASSWORD_BCRYPT);
         unset($data['password']);
 
@@ -70,7 +72,7 @@ class UserService
         $filtered = array_intersect_key($data, array_flip($allowed));
 
         if (empty($filtered)) {
-            throw new RuntimeException('No valid fields to update', 422);
+            return $user;
         }
 
         $this->userModel->update($id, $filtered);

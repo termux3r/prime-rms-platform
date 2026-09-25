@@ -1,9 +1,11 @@
 # Restaurant Management System (RMS) Backend — Architecture & System Overview
 
 ## 1. Project Overview & Architecture
+
 This project is a RESTful API backend for a **Restaurant Management System (RMS)** built with **CodeIgniter 4 (PHP 8.x)** and **PostgreSQL 15+**.
 
 The project strictly follows a **Clean MVC + Service Layer Architecture**:
+
 - **Controllers** are kept **thin**: focused solely on HTTP handling (request parsing, routing, authorization check, returning standard JSON responses).
 - **Services** contain **all business logic**: multi-table database transactions, money calculations, rule enforcements, and audit logging.
 - **Models** handle **data persistence**: defining schemas, primary keys, relationships, entity casting, and soft deletion.
@@ -50,6 +52,7 @@ The project strictly follows a **Clean MVC + Service Layer Architecture**:
 ---
 
 ### Layer 1: Controllers (`app/Controllers/Api/`)
+
 Controllers handle incoming HTTP endpoints and translate responses into a uniform JSON structure: `{ "status": "success|error", "data": ..., "message": "..." }`.
 
 | Controller | Description & Key Endpoint Functions |
@@ -68,6 +71,7 @@ Controllers handle incoming HTTP endpoints and translate responses into a unifor
 ---
 
 ### Layer 2: Services (`app/Services/`)
+
 Services contain the core domain rules, multi-table transactions (`$db->transStart() / transComplete()`), and calculations.
 
 | Service | Core Responsibilities & Main Functions |
@@ -84,6 +88,7 @@ Services contain the core domain rules, multi-table transactions (`$db->transSta
 ---
 
 ### Layer 3: Models (`app/Models/`)
+
 Models interface directly with PostgreSQL, handling CRUD, soft deletes (`deleted_at`), and data casting.
 
 | Model | Database Table | Key Attributes & Configuration |
@@ -157,6 +162,7 @@ The lifecycle of a typical dining interaction follows this sequence:
 ## 4. Database Schema & Key Guards
 
 ### Database Tables Overview
+
 - `users`: Staff credentials, roles (`admin`, `cashier`), active status.
 - `refresh_tokens`: Hashes of active refresh tokens.
 - `revoked_tokens`: Blacklisted JWT identifiers (`jti`) from logouts.
@@ -169,11 +175,14 @@ The lifecycle of a typical dining interaction follows this sequence:
 - `audit_logs`: Immutable security and financial audit trails.
 
 ### Key Database Architectural Guards
+
 1. **Single Active Order Constraint**:
    A PostgreSQL **partial unique index** enforces that a table can have at most one active order:
+
    ```sql
    CREATE UNIQUE INDEX idx_orders_active_table ON orders(table_id) WHERE status IN ('pending', 'completed');
    ```
+
 2. **Soft Deletes for Referential Integrity**:
    Categories, menu items, and tables use soft deletion (`deleted_at`). Hard deletion is prevented so historical orders and bills retain valid foreign keys without crashing database queries.
 3. **Server-Side Financial Integrity**:

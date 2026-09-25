@@ -27,6 +27,7 @@ class RestaurantTableModel extends Model
     protected $updatedField     = 'updated_at';
     protected $dateFormat       = 'datetime';
     protected $validationRules  = [
+        'id'           => 'permit_empty|is_natural_no_zero',
         'table_number' => 'required|max_length[20]|is_unique[restaurant_tables.table_number,id,{id}]',
         'capacity'     => 'required|integer|greater_than[0]',
         'status'       => 'permit_empty|in_list[available,occupied]',

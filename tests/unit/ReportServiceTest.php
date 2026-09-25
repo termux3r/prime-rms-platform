@@ -52,6 +52,19 @@ class ReportServiceTest extends CIUnitTestCase
 
     protected function createTestData(): array
     {
+        $db = \Config\Database::connect('tests');
+        if (! $db->table('users')->where('id', 1)->get()->getRow()) {
+            $db->table('users')->insert([
+                'id'            => 1,
+                'name'          => 'Test Cashier',
+                'username'      => 'cashier1',
+                'email'         => 'cashier1@example.com',
+                'password_hash' => password_hash('pass123', PASSWORD_BCRYPT),
+                'role'          => 'cashier',
+                'status'        => 'active',
+            ]);
+        }
+
         // Category
         $catId = $this->catModel->insert([
             'name'   => 'Drinks',
@@ -85,9 +98,16 @@ class ReportServiceTest extends CIUnitTestCase
 
     protected function createPaidBill(int $orderId, string $paidAt): int
     {
+        $order = $this->orderModel->find($orderId);
+        $amount = $order ? (float) $order['total_amount'] : 50.00;
+
+        if (! str_contains($paidAt, '+') && ! str_contains($paidAt, 'Z')) {
+            $paidAt .= '+03:00';
+        }
+
         $billId = $this->billModel->insert([
             'order_id'       => $orderId,
-            'total_amount'   => 50.00,
+            'total_amount'   => $amount,
             'payment_status' => 'paid',
             'payment_method' => 'cash',
             'paid_at'        => $paidAt,

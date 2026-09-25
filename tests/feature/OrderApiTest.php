@@ -33,10 +33,6 @@ class OrderApiTest extends CIUnitTestCase
 
     protected function tearDown(): void
     {
-        $this->tableModel->where('id >', 0)->delete();
-        $this->itemModel->where('id >', 0)->delete();
-        $this->catModel->where('id >', 0)->delete();
-        $this->userModel->where('id >', 0)->delete();
         parent::tearDown();
     }
 
@@ -313,8 +309,37 @@ class OrderApiTest extends CIUnitTestCase
 
     public function testCancelOrderFailsIfBillExists(): void
     {
-        // Tested in unit tests - API test would need bill creation
-        $this->markTestSkipped('Requires bill creation - tested in unit tests');
+        $token = $this->getCashierToken();
+        [$burgerId, $friesId, $tableId] = $this->setupTestData();
+
+        $createResponse = $this->call('POST', '/api/v1/orders', [
+            'table_id' => $tableId,
+        ], [], [
+            'Authorization' => 'Bearer ' . $token,
+        ]);
+        $orderId = $createResponse->getJSON()->data->id;
+
+        $this->call('POST', "/api/v1/orders/{$orderId}/items", [
+            'menu_item_id' => $burgerId,
+            'quantity'     => 1,
+        ], [], [
+            'Authorization' => 'Bearer ' . $token,
+        ]);
+
+        $billModel = new \App\Models\BillModel();
+        $billModel->insert([
+            'order_id'       => $orderId,
+            'total_amount'   => 15.00,
+            'payment_status' => 'unpaid',
+        ]);
+
+        $response = $this->call('POST', "/api/v1/orders/{$orderId}/cancel", [
+            'reason' => 'Customer wants to cancel',
+        ], [], [
+            'Authorization' => 'Bearer ' . $token,
+        ]);
+
+        $response->assertStatus(409);
     }
 
     public function testListOrdersWithFilters(): void

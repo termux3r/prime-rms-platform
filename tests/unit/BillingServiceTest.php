@@ -42,16 +42,34 @@ class BillingServiceTest extends CIUnitTestCase
     protected function tearDown(): void
     {
         $this->billModel->where('id >', 0)->delete();
-        $this->orderModel->where('id >', 0)->delete();
         $this->orderItemModel->where('id >', 0)->delete();
+        $this->orderModel->where('id >', 0)->delete();
         $this->menuItemModel->where('id >', 0)->delete();
+        $this->menuItemModel->purgeDeleted();
         $this->catModel->where('id >', 0)->delete();
+        $this->catModel->purgeDeleted();
         $this->tableModel->where('id >', 0)->delete();
+        $this->tableModel->purgeDeleted();
+        (new \App\Models\AuditLogModel())->where('id >', 0)->delete();
+        (new \App\Models\UserModel())->where('id >', 0)->delete();
         parent::tearDown();
     }
 
     protected function createTestData(): array
     {
+        $db = \Config\Database::connect('tests');
+        if (! $db->table('users')->where('id', 1)->get()->getRow()) {
+            $db->table('users')->insert([
+                'id'            => 1,
+                'name'          => 'Test Cashier',
+                'username'      => 'cashier1',
+                'email'         => 'cashier1@example.com',
+                'password_hash' => password_hash('pass123', PASSWORD_BCRYPT),
+                'role'          => 'cashier',
+                'status'        => 'active',
+            ]);
+        }
+
         $catId = $this->catModel->insert([
             'name'   => 'Test',
             'status' => 'active',
@@ -73,7 +91,7 @@ class BillingServiceTest extends CIUnitTestCase
         return [$itemId, $tableId];
     }
 
-    protected function createCompletedOrder(int $tableId): int
+    protected function createCompletedOrder(int $tableId, int $itemId): int
     {
         $orderId = $this->orderModel->insert([
             'table_id'     => $tableId,
@@ -86,7 +104,7 @@ class BillingServiceTest extends CIUnitTestCase
 
         $this->orderItemModel->insert([
             'order_id'     => $orderId,
-            'menu_item_id' => 1,
+            'menu_item_id' => $itemId,
             'quantity'     => 2,
             'unit_price'   => 15.00,
             'subtotal'     => 30.00,
@@ -98,7 +116,7 @@ class BillingServiceTest extends CIUnitTestCase
     public function testGenerateBill(): void
     {
         [$itemId, $tableId] = $this->createTestData();
-        $orderId = $this->createCompletedOrder($tableId);
+        $orderId = $this->createCompletedOrder($tableId, $itemId);
 
         $bill = $this->billingService->generateBill($orderId);
 
@@ -130,7 +148,7 @@ class BillingServiceTest extends CIUnitTestCase
     public function testGenerateBillFailsIfAlreadyExists(): void
     {
         [$itemId, $tableId] = $this->createTestData();
-        $orderId = $this->createCompletedOrder($tableId);
+        $orderId = $this->createCompletedOrder($tableId, $itemId);
 
         $this->billingService->generateBill($orderId);
 
@@ -142,7 +160,7 @@ class BillingServiceTest extends CIUnitTestCase
     public function testRecordPayment(): void
     {
         [$itemId, $tableId] = $this->createTestData();
-        $orderId = $this->createCompletedOrder($tableId);
+        $orderId = $this->createCompletedOrder($tableId, $itemId);
         $bill = $this->billingService->generateBill($orderId);
 
         $paidBill = $this->billingService->recordPayment($bill['id'], 'cash');
@@ -163,7 +181,7 @@ class BillingServiceTest extends CIUnitTestCase
     public function testRecordPaymentFailsIfAlreadyPaid(): void
     {
         [$itemId, $tableId] = $this->createTestData();
-        $orderId = $this->createCompletedOrder($tableId);
+        $orderId = $this->createCompletedOrder($tableId, $itemId);
         $bill = $this->billingService->generateBill($orderId);
 
         $this->billingService->recordPayment($bill['id'], 'cash');
@@ -176,7 +194,7 @@ class BillingServiceTest extends CIUnitTestCase
     public function testRecordPaymentValidatesMethod(): void
     {
         [$itemId, $tableId] = $this->createTestData();
-        $orderId = $this->createCompletedOrder($tableId);
+        $orderId = $this->createCompletedOrder($tableId, $itemId);
         $bill = $this->billingService->generateBill($orderId);
 
         $this->expectException(\RuntimeException::class);
@@ -187,7 +205,7 @@ class BillingServiceTest extends CIUnitTestCase
     public function testBuildReceipt(): void
     {
         [$itemId, $tableId] = $this->createTestData();
-        $orderId = $this->createCompletedOrder($tableId);
+        $orderId = $this->createCompletedOrder($tableId, $itemId);
         $bill = $this->billingService->generateBill($orderId);
         $this->billingService->recordPayment($bill['id'], 'cash');
 

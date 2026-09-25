@@ -39,7 +39,6 @@ class AuthController extends BaseController
 
         try {
             $tokens = $this->authService->login($username, $password);
-            $this->setAuthCookie($tokens['access_token'] ?? '', $tokens['expires_in'] ?? 1800);
             return $this->respond([
                 'status' => 'success',
                 'data'   => $tokens,
@@ -68,7 +67,6 @@ class AuthController extends BaseController
 
         try {
             $tokens = $this->authService->refresh($refreshToken);
-            $this->setAuthCookie($tokens['access_token'] ?? '', $tokens['expires_in'] ?? 1800);
             return $this->respond([
                 'status' => 'success',
                 'data'   => $tokens,
@@ -97,7 +95,6 @@ class AuthController extends BaseController
 
         $accessToken = $matches[1];
         $this->authService->logout($accessToken);
-        $this->clearAuthCookie();
 
         return $this->respond([
             'status'  => 'success',
@@ -130,25 +127,6 @@ class AuthController extends BaseController
             'status' => 'success',
             'data'   => $user,
         ]);
-    }
-
-    /**
-     * Persist the access token in an HttpOnly cookie so server-rendered staff
-     * pages (WebAuthFilter) can gate access. A second, JWT-less mechanism is not
-     * needed: the frontend keeps using localStorage Bearer tokens for the API.
-     */
-    protected function setAuthCookie(string $accessToken, int $expiresIn = 1800): void
-    {
-        if ($accessToken === '') {
-            return;
-        }
-
-        $this->response->setCookie('rms_access', $accessToken, $expiresIn, '', '/', '', false, true, 'Lax');
-    }
-
-    protected function clearAuthCookie(): void
-    {
-        $this->response->setCookie('rms_access', '', -2592000, '', '/');
     }
 
     /**

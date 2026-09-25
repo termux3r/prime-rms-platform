@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign in — Dallol RMS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --surface-base: #F2EFE7;
+    --surface-card: #FFFFFF;
+    --surface-sidebar: #17130E;
+    --surface-sidebar-active: #241D15;
+
+    --ink-primary: #1C1A16;
+    --ink-secondary: #756F60;
+    --ink-faint: #A39C8A;
+    --ink-inverse: #F2EFE7;
+    --ink-inverse-muted: #9C9384;
+
+    --accent-sulfur: #B58A12;
+    --accent-sulfur-ink: #7A5C0C;
+    --accent-sulfur-soft: #F3E8C9;
+
+    --accent-rust: #A8451D;
+    --accent-rust-ink: #7C3315;
+    --accent-rust-soft: #F2DED2;
+
+    --accent-teal: #2B685F;
+    --accent-teal-ink: #1E4A43;
+    --accent-teal-soft: #DAE9E5;
+
+    --border-subtle: #E4DFD1;
+    --border-strong: #CFC7B2;
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 18px;
+
+    --shadow-card: 0 1px 2px rgba(23,19,14,.05), 0 10px 30px -14px rgba(23,19,14,.18);
+
+    --font-display: 'Archivo', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+  body {
+    margin: 0;
+    font-family: var(--font-body);
+    color: var(--ink-primary);
+    background: var(--surface-base);
+  }
+  a { color: inherit; }
+  :focus-visible {
+    outline: 2px solid var(--accent-sulfur);
+    outline-offset: 2px;
+  }
+
+  .login-shell {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+  }
+
+  .login-brand-panel {
+    position: relative;
+    background: var(--surface-sidebar);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 56px;
+  }
+  .login-brand-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 18% 20%, rgba(181,138,18,0.35), transparent 40%),
+      radial-gradient(circle at 82% 15%, rgba(43,104,95,0.30), transparent 38%),
+      radial-gradient(circle at 55% 85%, rgba(168,69,29,0.28), transparent 45%),
+      radial-gradient(circle at 90% 75%, rgba(181,138,18,0.18), transparent 40%);
+    filter: blur(2px);
+  }
+  .login-brand-panel > * { position: relative; z-index: 1; }
+
+  .brand-mark {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 22px;
+    letter-spacing: 0.14em;
+    color: var(--ink-inverse);
+    text-transform: uppercase;
+  }
+  .brand-mark span { color: var(--accent-sulfur); }
+
+  .login-hero {
+    max-width: 420px;
+  }
+  .login-hero-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-sulfur);
+    margin-bottom: 18px;
+  }
+  .login-hero h1 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 38px;
+    line-height: 1.15;
+    color: var(--ink-inverse);
+    margin: 0 0 16px;
+  }
+  .login-hero p {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--ink-inverse-muted);
+    margin: 0;
+  }
+
+  .login-footnote {
+    font-size: 12px;
+    color: var(--ink-inverse-muted);
+    font-family: var(--font-mono);
+  }
+
+  .login-form-panel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 56px;
+  }
+  .login-form-card {
+    width: 100%;
+    max-width: 380px;
+  }
+  .login-form-card .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-secondary);
+    margin-bottom: 10px;
+  }
+  .login-form-card h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 28px;
+    margin: 0 0 8px;
+  }
+  .login-form-card .sub {
+    font-size: 14px;
+    color: var(--ink-secondary);
+    margin: 0 0 32px;
+  }
+
+  .form-group { margin-bottom: 20px; }
+  .form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--ink-primary);
+  }
+  .form-input {
+    width: 100%;
+    padding: 12px 14px;
+    font-family: var(--font-body);
+    font-size: 15px;
+    color: var(--ink-primary);
+    background: var(--surface-card);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .form-input:focus {
+    border-color: var(--accent-sulfur);
+    box-shadow: 0 0 0 3px var(--accent-sulfur-soft);
+  }
+  .form-input::placeholder { color: var(--ink-faint); }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 14px;
+    padding: 13px 20px;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: transform .08s ease, background .15s ease;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary {
+    width: 100%;
+    background: var(--ink-primary);
+    color: var(--ink-inverse);
+  }
+  .btn-primary:hover { background: #2c2820; }
+
+  .login-meta {
+    margin-top: 28px;
+    font-size: 12.5px;
+    color: var(--ink-secondary);
+    line-height: 1.6;
+  }
+
+  @media (max-width: 860px) {
+    .login-shell { grid-template-columns: 1fr; }
+    .login-brand-panel { padding: 40px 32px; min-height: 260px; }
+    .login-hero h1 { font-size: 30px; }
+    .login-form-panel { padding: 40px 32px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="login-shell">
+  <div class="login-brand-panel">
+    <div class="brand-mark">DALL<span>O</span>L</div>
+    <div class="login-hero">
+      <div class="login-hero-eyebrow">Restaurant Management</div>
+      <h1>Every table, every ticket, accounted for.</h1>
+      <p>Sign in to take orders, manage the floor, and close out the day's sales.</p>
+    </div>
+    <div class="login-footnote">Dallol Tech · Internal system</div>
+  </div>
+
+  <div class="login-form-panel">
+    <div class="login-form-card">
+      <div class="eyebrow">Sign in</div>
+      <h2>Welcome back</h2>
+      <p class="sub">Enter your credentials to open your shift.</p>
+
+      <form onsubmit="return false;">
+        <div class="form-group">
+          <label class="form-label" for="username">Username</label>
+          <input class="form-input" id="username" type="text" placeholder="e.g. yonas.cashier" autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input class="form-input" id="password" type="password" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <button class="btn btn-primary" type="submit">Sign in</button>
+      </form>
+
+      <div class="login-meta">Don't have an account? Ask your administrator to set one up — there's no self-signup on this system by design.</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

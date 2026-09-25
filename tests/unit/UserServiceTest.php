@@ -14,6 +14,8 @@ class UserServiceTest extends CIUnitTestCase
 {
     use DatabaseTestTrait;
 
+    protected $migrate = false;
+
     protected $userService;
     protected $userModel;
 

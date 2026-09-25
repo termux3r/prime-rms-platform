@@ -21,16 +21,4 @@ class Paths
     public string $viewDirectory     = __DIR__ . '/../Views';
     public string $envDirectory      = __DIR__ . '/../../';
     public string $configDirectory   = __DIR__;
-
-    public function __construct()
-    {
-        if (getenv('VERCEL') || isset($_ENV['VERCEL']) || isset($_SERVER['VERCEL'])) {
-            $this->writableDirectory = '/tmp/writable';
-            foreach (['cache', 'logs', 'session', 'debugbar', 'uploads'] as $subdir) {
-                if (!is_dir("/tmp/writable/{$subdir}")) {
-                    @mkdir("/tmp/writable/{$subdir}", 0777, true);
-                }
-            }
-        }
-    }
 }

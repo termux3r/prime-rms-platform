@@ -51,9 +51,10 @@ class JwtAuthFilter implements FilterInterface
         }
 
         // Attach user to request for downstream use
-        $request->userId = (int) ($payload['user_id'] ?? 0);
+        $request->userId   = (int) ($payload['user_id'] ?? 0);
+        $request->user_id  = (int) ($payload['user_id'] ?? 0);
         $request->userRole = $payload['role'] ?? 'cashier';
-        $request->userJti = $jti;
+        $request->userJti  = $jti;
 
         return null;
     }

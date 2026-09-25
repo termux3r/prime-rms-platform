@@ -14,9 +14,6 @@ use RuntimeException;
  */
 class BillingService
 {
-    /** Standard VAT rate applied to the subtotal. */
-    public const TAX_RATE = 0.15;
-
     protected $db;
     protected $billModel;
     protected $orderModel;
@@ -81,134 +78,11 @@ class BillingService
     }
 
     /**
-     * Build a full itemized bill summary for an order (read-only).
-     * Computes subtotal from all items, applies the standard VAT rate, and
-     * returns the grand total. Works whether or not a bills row exists yet.
-     */
-    public function summarizeOrder(int $orderId): array
-    {
-        $order = $this->orderModel->find($orderId);
-        if (! $order) {
-            throw new RuntimeException('Order not found', 404);
-        }
-
-        $items = $this->orderItemModel
-            ->select('order_items.*, menu_items.name as menu_item_name')
-            ->join('menu_items', 'menu_items.id = order_items.menu_item_id', 'left')
-            ->where('order_items.order_id', $orderId)
-            ->findAll();
-
-        $subtotal = 0.0;
-        foreach ($items as &$item) {
-            $lineTotal       = (float) $item['unit_price'] * (int) $item['quantity'];
-            $item['subtotal'] = round($lineTotal, 2);
-            $subtotal        += $lineTotal;
-        }
-        unset($item);
-
-        $subtotal   = round($subtotal, 2);
-        $tax        = round($subtotal * self::TAX_RATE, 2);
-        $grandTotal = round($subtotal + $tax, 2);
-
-        return [
-            'order_id'     => $orderId,
-            'table_id'     => $order['table_id'],
-            'order_status' => $order['status'],
-            'items'        => $items,
-            'subtotal'     => $subtotal,
-            'tax_rate'     => self::TAX_RATE,
-            'tax'          => $tax,
-            'grand_total'  => $grandTotal,
-        ];
-    }
-
-    /**
-     * Process final payment for an order (POST /orders/{id}/pay).
-     *
-     * Ensures a bill exists (creating it if needed with the tax-inclusive
-     * grand total), records the payment, flips the order to 'paid', then
-     * marks the table available. All in one transaction.
-     */
-    public function payOrder(int $orderId, string $method, ?int $cashierId = null): array
-    {
-        $this->db->transStart();
-
-        $order = $this->orderModel->find($orderId);
-        if (! $order) {
-            $this->db->transRollback();
-            throw new RuntimeException('Order not found', 404);
-        }
-
-        if (! in_array($method, ['cash', 'card', 'mobile'], true)) {
-            $this->db->transRollback();
-            throw new RuntimeException('Invalid payment method', 422);
-        }
-
-        $summary = $this->summarizeOrder($orderId);
-        $grandTotal = $summary['grand_total'];
-
-        // Find or create the bill for this order
-        $bill = $this->billModel->where('order_id', $orderId)->first();
-        if (! $bill) {
-            $billId = $this->billModel->insert([
-                'order_id'       => $orderId,
-                'total_amount'   => $grandTotal,
-                'payment_status' => 'unpaid',
-            ]);
-            if (! $billId) {
-                $this->db->transRollback();
-                throw new RuntimeException('Failed to generate bill', 500);
-            }
-            $bill = $this->billModel->find($billId);
-        }
-
-        if ($bill['payment_status'] === 'paid') {
-            $this->db->transRollback();
-            throw new RuntimeException('Bill has already been paid', 409);
-        }
-
-        $now = date('Y-m-d H:i:s');
-
-        // Persist the final tax-inclusive total on the bill
-        $this->billModel->update($bill['id'], [
-            'total_amount'   => $grandTotal,
-            'payment_status' => 'paid',
-            'payment_method' => $method,
-            'paid_at'        => $now,
-        ]);
-
-        // Flip order to paid
-        $this->orderModel->update($orderId, ['status' => 'paid', 'total_amount' => $grandTotal]);
-
-        // Mark table available
-        $this->tableStateService->markAvailable($order['table_id'], $orderId);
-
-        $this->auditService->log(
-            $cashierId ?? $this->getCurrentUserId(),
-            'bill.paid',
-            'bill',
-            $bill['id'],
-            ['order_id' => $orderId, 'amount' => $grandTotal, 'method' => $method]
-        );
-
-        $this->db->transComplete();
-
-        if ($this->db->transStatus() === false) {
-            throw new RuntimeException('Failed to record payment', 500);
-        }
-
-        return [
-            'bill'     => $this->billModel->find($bill['id']),
-            'summary'  => $summary,
-        ];
-    }
-
-    /**
      * Record payment for a bill.
      * Reject with 409 if already paid (idempotency guard).
      * Flip order status to 'paid', mark table available, write audit log.
      */
-    public function recordPayment(int $billId, string $method): array
+    public function recordPayment(int $billId, string $method, ?int $userId = null): array
     {
         $this->db->transStart();
 
@@ -245,9 +119,11 @@ class BillingService
             $this->tableStateService->markAvailable($order['table_id']);
         }
 
+        $effectiveUserId = $userId ?? $this->getCurrentUserId() ?? ($order['cashier_id'] ?? 1);
+
         // Audit log
         $this->auditService->log(
-            $this->getCurrentUserId(),
+            $effectiveUserId,
             'bill.paid',
             'bill',
             $billId,
@@ -324,6 +200,6 @@ class BillingService
         // This is a simplified approach - in reality you'd get this from the JWT filter
         // For now, we'll try to get it from the request if available
         $request = service('request');
-        return $request->userId ?? null;
+        return $request->user_id ?? null;
     }
 }

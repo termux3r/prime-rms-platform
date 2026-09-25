@@ -42,11 +42,13 @@ class ReportService
         // Use timezone-aware bucketing for paid_at
         $tz = $this->timezone;
 
-        // Total orders for the day (orders.created_at in local timezone)
+        // Total orders for the day (paid orders only, based on paid_at in local timezone)
         $totalOrders = $this->db->query("
-            SELECT COUNT(*) as count
-            FROM orders
-            WHERE (created_at AT TIME ZONE ?)::date = ?
+            SELECT COUNT(DISTINCT o.id) as count
+            FROM orders o
+            JOIN bills b ON b.order_id = o.id
+            WHERE b.payment_status = 'paid'
+              AND (b.paid_at AT TIME ZONE ?)::date = ?
         ", [$tz, $date])->getRow()->count;
 
         // Total revenue from PAID bills only (bills.paid_at in local timezone)

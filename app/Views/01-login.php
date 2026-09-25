@@ -213,6 +213,23 @@
     line-height: 1.6;
   }
 
+  .demo-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    background: #e9e5da;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    cursor: pointer;
+    margin-right: 6px;
+    margin-top: 6px;
+    border: 1px solid var(--border-subtle);
+  }
+  .demo-badge:hover {
+    background: var(--accent-sulfur-soft);
+    border-color: var(--accent-sulfur);
+  }
+
   @media (max-width: 860px) {
     .login-shell { grid-template-columns: 1fr; }
     .login-brand-panel { padding: 40px 32px; min-height: 260px; }
@@ -240,105 +257,72 @@
       <h2>Welcome back</h2>
       <p class="sub">Enter your credentials to open your shift.</p>
 
-      <form id="loginForm" onsubmit="return false;">
+      <div id="loginError" style="display:none; color: var(--accent-rust-ink); background: var(--accent-rust-soft); padding: 12px 14px; border-radius: var(--radius-sm); margin-bottom: 18px; font-size: 13.5px; border: 1px solid var(--accent-rust);"></div>
+
+      <form id="loginForm" onsubmit="handleLogin(event)">
         <div class="form-group">
           <label class="form-label" for="username">Username</label>
-          <input class="form-input" id="username" type="text" placeholder="e.g. yonas.cashier" autocomplete="username">
+          <input class="form-input" id="username" type="text" placeholder="e.g. admin" autocomplete="username" required value="admin">
         </div>
         <div class="form-group">
           <label class="form-label" for="password">Password</label>
-          <input class="form-input" id="password" type="password" placeholder="••••••••" autocomplete="current-password">
+          <input class="form-input" id="password" type="password" placeholder="••••••••" autocomplete="current-password" required value="ChangeMe123!">
         </div>
-        <button class="btn btn-primary" id="loginSubmit" type="submit">Sign in</button>
+        <button class="btn btn-primary" type="submit" id="loginBtn">Sign in</button>
       </form>
 
-      <div class="login-meta">Don't have an account? Ask your administrator to set one up — there's no self-signup on this system by design.</div>
+      <div style="margin-top: 20px;">
+        <span style="font-size: 11.5px; color: var(--ink-secondary); font-family: var(--font-mono); text-transform: uppercase;">Quick Fill:</span><br>
+        <span class="demo-badge" onclick="fillCreds('admin', 'ChangeMe123!')">Admin (admin / ChangeMe123!)</span>
+      </div>
+
+      <div class="login-meta">Dallol RMS internal access only. All actions are logged and auditable under server policies.</div>
     </div>
   </div>
 </div>
 
 <script>
-  const loginForm = document.getElementById('loginForm');
-  const usernameInput = document.getElementById('username');
-  const passwordInput = document.getElementById('password');
+function fillCreds(u, p) {
+  document.getElementById('username').value = u;
+  document.getElementById('password').value = p;
+}
 
-  function extractToken(payload) {
-    if (!payload || typeof payload !== 'object') {
-      return null;
+async function handleLogin(e) {
+  e.preventDefault();
+  const errorEl = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtn');
+  errorEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Signing in...';
+
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+
+  try {
+    const res = await fetch('/api/v1/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+
+    if (res.ok && data.status === 'success') {
+      localStorage.setItem('rms_access_token', data.data.access_token);
+      localStorage.setItem('rms_refresh_token', data.data.refresh_token);
+      window.location.href = '/dashboard';
+    } else {
+      errorEl.textContent = data.message || 'Invalid username or password';
+      errorEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
     }
-
-    if (typeof payload.token === 'string' && payload.token) {
-      return payload.token;
-    }
-
-    if (typeof payload.access_token === 'string' && payload.access_token) {
-      return payload.access_token;
-    }
-
-    if (payload.data) {
-      if (typeof payload.data.token === 'string' && payload.data.token) {
-        return payload.data.token;
-      }
-
-      if (typeof payload.data.access_token === 'string' && payload.data.access_token) {
-        return payload.data.access_token;
-      }
-
-      if (payload.data.data) {
-        const nestedToken = extractToken(payload.data.data);
-        if (nestedToken) {
-          return nestedToken;
-        }
-      }
-
-      const nestedToken = extractToken(payload.data);
-      if (nestedToken) {
-        return nestedToken;
-      }
-    }
-
-    return null;
+  } catch (err) {
+    errorEl.textContent = 'Unable to connect to RMS API service.';
+    errorEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Sign in';
   }
-
-  loginForm.addEventListener('submit', async function (event) {
-    event.preventDefault();
-
-    const username = usernameInput.value.trim();
-    const password = passwordInput.value;
-
-    try {
-      const response = await fetch('http://localhost:8080/api/v1/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ username: username, password: password })
-      });
-
-      if (response.status === 401) {
-        alert('Invalid credentials');
-        return;
-      }
-
-      if (response.status === 200) {
-        const data = await response.json();
-        console.log(data);
-
-        const token = extractToken(data);
-
-        if (token) {
-          localStorage.setItem('rms_token', token);
-          window.location.href = '/dashboard';
-          return;
-        }
-
-        console.error('Login succeeded but no access token was returned.', data);
-      }
-    } catch (error) {
-      console.error('Login request failed:', error);
-    }
-  });
+}
 </script>
 
 </body>

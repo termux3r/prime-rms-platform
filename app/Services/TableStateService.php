@@ -54,7 +54,7 @@ class TableStateService
      * Called when an order is completed, cancelled, or paid.
      * Rejects if an active order still exists for this table.
      */
-    public function markAvailable(int $tableId, ?int $excludeOrderId = null): void
+    public function markAvailable(int $tableId): void
     {
         $this->db->transStart();
 
@@ -63,18 +63,12 @@ class TableStateService
             throw new RuntimeException('Table not found', 404);
         }
 
-        // Only in-progress orders keep a table occupied.
-        // Final/locked statuses (completed, paid, cancelled) never block freeing the table.
+        // Check for any active order on this table (pending or completed)
         $orderModel = new \App\Models\OrderModel();
-        $builder = $orderModel
+        $activeOrder = $orderModel
             ->where('table_id', $tableId)
-            ->whereIn('status', ['pending', 'preparing', 'ready', 'served']);
-
-        if ($excludeOrderId !== null) {
-            $builder->where('id !=', $excludeOrderId);
-        }
-
-        $activeOrder = $builder->first();
+            ->whereIn('status', ['pending', 'completed'])
+            ->first();
 
         if ($activeOrder) {
             throw new RuntimeException('Cannot mark table available while an active order exists', 409);

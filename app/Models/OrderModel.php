@@ -20,6 +20,7 @@ class OrderModel extends Model
         'cashier_id',
         'status',
         'total_amount',
+        'created_at',
     ];
     protected $useTimestamps    = true;
     protected $createdField     = 'created_at';
@@ -28,7 +29,7 @@ class OrderModel extends Model
     protected $validationRules  = [
         'table_id'     => 'required|integer',
         'cashier_id'   => 'required|integer',
-        'status'       => 'permit_empty|in_list[pending,preparing,ready,served,completed,paid,cancelled]',
+        'status'       => 'permit_empty|in_list[pending,completed,paid,cancelled]',
         'total_amount' => 'permit_empty|decimal|greater_than_equal_to[0]',
     ];
     protected $skipValidation   = false;

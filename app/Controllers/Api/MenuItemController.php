@@ -19,33 +19,28 @@ class MenuItemController extends BaseController
      */
     public function index(): ResponseInterface
     {
-        $page      = max(1, (int) $this->request->getGet('page') ?? 1);
-        $perPage   = min(100, max(1, (int) $this->request->getGet('per_page') ?? 20));
+        $page      = max(1, (int) ($this->request->getGet('page') ?: 1));
+        $perPage   = min(100, max(1, (int) ($this->request->getGet('per_page') ?: 20)));
         $search    = $this->request->getGet('search') ?? '';
         $category  = $this->request->getGet('category_id') ?? '';
         $status    = $this->request->getGet('status') ?? '';
 
         $model = new \App\Models\MenuItemModel();
-        $builder = $model->builder();
-        $builder->select('menu_items.*, menu_categories.name AS category_name')
-            ->join('menu_categories', 'menu_categories.id = menu_items.category_id', 'left');
 
         if ($search) {
-            $builder->groupStart()
-                ->like('menu_items.name', $search)
-                ->orLike('menu_items.description', $search)
+            $model->groupStart()
+                ->like('name', $search)
+                ->orLike('description', $search)
                 ->groupEnd();
         }
         if ($category) {
-            $builder->where('menu_items.category_id', $category);
+            $model->where('category_id', $category);
         }
         if ($status) {
-            $builder->where('menu_items.status', $status);
+            $model->where('status', $status);
         }
 
-        $builder->orderBy('name', 'ASC');
-
-        $items = $model->paginate($perPage, 'default', $page);
+        $items = $model->orderBy('name', 'ASC')->paginate($perPage, 'default', $page);
         $pager = $model->pager;
 
         return $this->respond([
@@ -84,13 +79,13 @@ class MenuItemController extends BaseController
      */
     public function create(): ResponseInterface
     {
-        $data = $this->body();
+        $data = $this->request->getJSON(true) ?? $this->request->getPost();
 
         // Handle image upload
         $file = $this->request->getFile('image');
         if ($file && $file->isValid() && ! $file->hasMoved()) {
             $validation = $this->validate([
-                'image' => 'uploaded[image]|mime_in[image,image/jpg,image/jpeg,image/png,image/webp]|max_size[image,2048]',
+                'image' => 'uploaded[image]|mime_in[image,jpg,jpeg,png,webp]|max_size[image,2048]',
             ]);
             if (! $validation) {
                 return $this->respond([
@@ -100,7 +95,7 @@ class MenuItemController extends BaseController
             }
 
             $newName = $file->getRandomName();
-            $file->move('uploads/menu-items', $newName);
+            $file->move('public/uploads/menu-items', $newName);
             $data['image'] = 'uploads/menu-items/' . $newName;
         }
 
@@ -150,13 +145,13 @@ class MenuItemController extends BaseController
             ], 404);
         }
 
-        $data = $this->body();
+        $data = $this->request->getJSON(true) ?? $this->request->getPost();
 
         // Handle image upload
         $file = $this->request->getFile('image');
         if ($file && $file->isValid() && ! $file->hasMoved()) {
             $validation = $this->validate([
-                'image' => 'uploaded[image]|mime_in[image,image/jpg,image/jpeg,image/png,image/webp]|max_size[image,2048]',
+                'image' => 'uploaded[image]|mime_in[image,jpg,jpeg,png,webp]|max_size[image,2048]',
             ]);
             if (! $validation) {
                 return $this->respond([
@@ -166,7 +161,7 @@ class MenuItemController extends BaseController
             }
 
             $newName = $file->getRandomName();
-            $file->move('uploads/menu-items', $newName);
+            $file->move('public/uploads/menu-items', $newName);
             $data['image'] = 'uploads/menu-items/' . $newName;
         }
 
@@ -229,8 +224,8 @@ class MenuItemController extends BaseController
      */
     public function byCategory(int $categoryId): ResponseInterface
     {
-        $page    = max(1, (int) $this->request->getGet('page') ?? 1);
-        $perPage = min(100, max(1, (int) $this->request->getGet('per_page') ?? 20));
+        $page    = max(1, (int) ($this->request->getGet('page') ?: 1));
+        $perPage = min(100, max(1, (int) ($this->request->getGet('per_page') ?: 20)));
 
         $catModel = new \App\Models\MenuCategoryModel();
         if (! $catModel->find($categoryId)) {
@@ -262,4 +257,3 @@ class MenuItemController extends BaseController
         return $this->response->setStatusCode($status)->setJSON($data);
     }
 }
-

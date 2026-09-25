@@ -27,6 +27,7 @@ class MenuCategoryModel extends Model
     protected $updatedField     = 'updated_at';
     protected $dateFormat       = 'datetime';
     protected $validationRules  = [
+        'id'          => 'permit_empty|is_natural_no_zero',
         'name'        => 'required|max_length[100]|is_unique[menu_categories.name,id,{id}]',
         'description' => 'permit_empty|max_length[1000]',
         'status'      => 'permit_empty|in_list[active,inactive]',

@@ -28,8 +28,6 @@ class MenuCategoryApiTest extends CIUnitTestCase
 
     protected function tearDown(): void
     {
-        $this->catModel->where('id >', 0)->delete();
-        $this->userModel->where('id >', 0)->delete();
         parent::tearDown();
     }
 

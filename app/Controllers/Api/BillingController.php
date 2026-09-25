@@ -43,59 +43,6 @@ class BillingController extends BaseController
     }
 
     /**
-     * GET /api/v1/orders/{id}/bill - Fetch the final itemized bill summary for an order.
-     * Computes subtotal, 15% VAT, and grand total (read-only, no new bill row).
-     */
-    public function orderBill(int $orderId): ResponseInterface
-    {
-        try {
-            $summary = $this->billingService->summarizeOrder($orderId);
-            return $this->respond([
-                'status' => 'success',
-                'data'   => $summary,
-            ]);
-        } catch (\RuntimeException $e) {
-            return $this->respond([
-                'status'  => 'error',
-                'message' => $e->getMessage(),
-            ], $e->getCode() ?: 404);
-        }
-    }
-
-    /**
-     * POST /api/v1/orders/{id}/pay - Process final payment for an order.
-     * Records the bill, flips order to paid, frees the table.
-     */
-    public function payOrder(int $orderId): ResponseInterface
-    {
-        $data   = $this->request->getJSON(true) ?? $this->request->getPost();
-        $method = $data['payment_method'] ?? null;
-
-        if (! $method) {
-            return $this->respond([
-                'status'  => 'error',
-                'message' => 'payment_method (cash, card, mobile) is required',
-            ], 422);
-        }
-
-        $cashierId = $this->request->userId ?? $data['cashier_id'] ?? null;
-
-        try {
-            $result = $this->billingService->payOrder($orderId, $method, $cashierId);
-            return $this->respond([
-                'status' => 'success',
-                'data'   => $result,
-                'message' => 'Payment recorded, order paid, table freed',
-            ]);
-        } catch (\RuntimeException $e) {
-            return $this->respond([
-                'status'  => 'error',
-                'message' => $e->getMessage(),
-            ], $e->getCode() ?: 500);
-        }
-    }
-
-    /**
      * GET /api/v1/bills/{id} - Get bill detail
      */
     public function show(int $id): ResponseInterface

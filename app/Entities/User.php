@@ -17,4 +17,14 @@ class User extends Entity
         'role'     => 'string',
     ];
     protected $hidden = ['password_hash'];
+
+    public function toArray(bool $onlyChanged = false, bool $cast = true, bool $recursive = false): array
+    {
+        $result = parent::toArray($onlyChanged, $cast, $recursive);
+        foreach ($this->hidden as $field) {
+            unset($result[$field]);
+        }
+
+        return $result;
+    }
 }

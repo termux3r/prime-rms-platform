@@ -42,13 +42,6 @@ class ReportsDashboardApiTest extends CIUnitTestCase
 
     protected function tearDown(): void
     {
-        $this->billModel->where('id >', 0)->delete();
-        $this->orderModel->where('id >', 0)->delete();
-        $this->orderItemModel->where('id >', 0)->delete();
-        $this->itemModel->where('id >', 0)->delete();
-        $this->catModel->where('id >', 0)->delete();
-        $this->tableModel->where('id >', 0)->delete();
-        $this->userModel->where('id >', 0)->delete();
         parent::tearDown();
     }
 

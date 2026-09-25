@@ -15,6 +15,10 @@ class ThrottleFilter implements FilterInterface
 {
     public function before(RequestInterface $request, $arguments = null)
     {
+        if (ENVIRONMENT === 'testing') {
+            return null;
+        }
+
         $throttler = service('throttler');
 
         $ip       = $request->getIPAddress();

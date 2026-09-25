@@ -27,27 +27,26 @@ class UserController extends BaseController
      */
     public function index(): ResponseInterface
     {
-        $page      = max(1, (int) $this->request->getGet('page') ?? 1);
-        $perPage   = min(100, max(1, (int) $this->request->getGet('per_page') ?? 20));
+        $page      = max(1, (int) ($this->request->getGet('page') ?: 1));
+        $perPage   = min(100, max(1, (int) ($this->request->getGet('per_page') ?: 20)));
         $search    = $this->request->getGet('search') ?? '';
         $status    = $this->request->getGet('status') ?? '';
         $role      = $this->request->getGet('role') ?? '';
 
         $model = new \App\Models\UserModel();
-        $builder = $model->builder();
 
         if ($search) {
-            $builder->groupStart()
+            $model->groupStart()
                 ->like('name', $search)
                 ->orLike('username', $search)
                 ->orLike('email', $search)
                 ->groupEnd();
         }
         if ($status) {
-            $builder->where('status', $status);
+            $model->where('status', $status);
         }
         if ($role) {
-            $builder->where('role', $role);
+            $model->where('role', $role);
         }
 
         $users = $model->paginate($perPage, 'default', $page);
@@ -56,7 +55,7 @@ class UserController extends BaseController
         return $this->respond([
             'status' => 'success',
             'data'   => [
-                'items' => $users,
+                'users' => $users,
                 'pager' => $pager ? $pager->getDetails() : null,
             ],
         ]);

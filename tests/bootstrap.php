@@ -3,7 +3,6 @@
 /**
  * Test bootstrap
  */
-
 require __DIR__ . '/../vendor/autoload.php';
 
 // Load the framework's test bootstrap

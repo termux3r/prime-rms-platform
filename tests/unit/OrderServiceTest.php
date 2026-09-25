@@ -41,17 +41,35 @@ class OrderServiceTest extends CIUnitTestCase
 
     protected function tearDown(): void
     {
-        $this->orderModel->where('id >', 0)->delete();
-        $this->orderItemModel->where('id >', 0)->delete();
-        $this->menuItemModel->where('id >', 0)->delete();
-        $this->catModel->where('id >', 0)->delete();
-        $this->tableModel->where('id >', 0)->delete();
         $this->billModel->where('id >', 0)->delete();
+        $this->orderItemModel->where('id >', 0)->delete();
+        $this->orderModel->where('id >', 0)->delete();
+        (new \App\Models\AuditLogModel())->where('id >', 0)->delete();
+        $this->menuItemModel->where('id >', 0)->delete();
+        $this->menuItemModel->purgeDeleted();
+        $this->catModel->where('id >', 0)->delete();
+        $this->catModel->purgeDeleted();
+        $this->tableModel->where('id >', 0)->delete();
+        $this->tableModel->purgeDeleted();
+        (new \App\Models\UserModel())->where('id >', 0)->delete();
         parent::tearDown();
     }
 
     protected function createTestData(): array
     {
+        $db = \Config\Database::connect('tests');
+        if (! $db->table('users')->where('id', 1)->get()->getRow()) {
+            $db->table('users')->insert([
+                'id'            => 1,
+                'name'          => 'Test Cashier',
+                'username'      => 'cashier1',
+                'email'         => 'cashier1@example.com',
+                'password_hash' => password_hash('pass123', PASSWORD_BCRYPT),
+                'role'          => 'cashier',
+                'status'        => 'active',
+            ]);
+        }
+
         // Category
         $catId = $this->catModel->insert([
             'name'   => 'Test',
@@ -158,7 +176,7 @@ class OrderServiceTest extends CIUnitTestCase
     {
         [$burgerId, $friesId, $inactiveId, $tableId] = $this->createTestData();
         $order = $this->orderService->createOrder($tableId, 1);
-        $this->orderService->addItem($order['id'], $burgerId, 2);
+        $order = $this->orderService->addItem($order['id'], $burgerId, 2);
         $itemId = $order['items'][0]['id'];
 
         $updated = $this->orderService->updateItem($order['id'], $itemId, 5);
@@ -173,7 +191,7 @@ class OrderServiceTest extends CIUnitTestCase
         [$burgerId, $friesId, $inactiveId, $tableId] = $this->createTestData();
         $order = $this->orderService->createOrder($tableId, 1);
         $this->orderService->addItem($order['id'], $burgerId, 2);
-        $this->orderService->addItem($order['id'], $friesId, 1);
+        $order = $this->orderService->addItem($order['id'], $friesId, 1);
         $itemId = $order['items'][0]['id'];
 
         $updated = $this->orderService->removeItem($order['id'], $itemId);
@@ -291,16 +309,22 @@ class OrderServiceTest extends CIUnitTestCase
     {
         [$burgerId, $friesId, $inactiveId, $tableId] = $this->createTestData();
 
+        $table2Id = $this->tableModel->insert([
+            'table_number' => 'O2',
+            'capacity'     => 4,
+            'status'       => 'available',
+        ]);
+
         $o1 = $this->orderService->createOrder($tableId, 1);
         $this->orderService->addItem($o1['id'], $burgerId, 1);
 
-        $o2 = $this->orderService->createOrder($tableId, 1);
+        $o2 = $this->orderService->createOrder($table2Id, 1);
         $this->orderService->addItem($o2['id'], $friesId, 2);
 
         $result = $this->orderService->listOrders(['status' => 'pending'], 1, 10);
         $this->assertCount(2, $result['orders']);
 
         $result = $this->orderService->listOrders(['table_id' => $tableId], 1, 10);
-        $this->assertCount(2, $result['orders']);
+        $this->assertCount(1, $result['orders']);
     }
 }

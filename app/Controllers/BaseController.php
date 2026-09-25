@@ -28,26 +28,4 @@ abstract class BaseController extends Controller
 
         parent::initController($request, $response, $logger);
     }
-
-    /**
-     * Read the request body as an array, tolerating both `application/json`
-     * payloads and multipart/form-data submissions (image uploads).
-     *
-     * `IncomingRequest::getJSON(true)` throws when the body is not valid JSON,
-     * so we only parse JSON when the Content-Type actually declares it.
-     *
-     * @return array<string, mixed>
-     */
-    protected function body(): array
-    {
-        $contentType = strtolower((string) $this->request->getHeaderLine('Content-Type'));
-
-        if (str_contains($contentType, 'application/json')) {
-            $json = $this->request->getJSON(true);
-
-            return is_array($json) ? $json : [];
-        }
-
-        return $this->request->getPost() ?? [];
-    }
 }

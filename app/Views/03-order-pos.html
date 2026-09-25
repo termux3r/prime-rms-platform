@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Table 05 · Order — Dallol RMS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --surface-base: #F2EFE7;
+    --surface-card: #FFFFFF;
+    --surface-sidebar: #17130E;
+    --surface-sidebar-active: #241D15;
+
+    --ink-primary: #1C1A16;
+    --ink-secondary: #756F60;
+    --ink-faint: #A39C8A;
+    --ink-inverse: #F2EFE7;
+    --ink-inverse-muted: #9C9384;
+
+    --accent-sulfur: #B58A12;
+    --accent-sulfur-ink: #7A5C0C;
+    --accent-sulfur-soft: #F3E8C9;
+
+    --accent-rust: #A8451D;
+    --accent-rust-ink: #7C3315;
+    --accent-rust-soft: #F2DED2;
+
+    --accent-teal: #2B685F;
+    --accent-teal-ink: #1E4A43;
+    --accent-teal-soft: #DAE9E5;
+
+    --border-subtle: #E4DFD1;
+    --border-strong: #CFC7B2;
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 18px;
+
+    --shadow-card: 0 1px 2px rgba(23,19,14,.05), 0 10px 30px -14px rgba(23,19,14,.18);
+
+    --font-display: 'Archivo', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+  body { margin: 0; font-family: var(--font-body); color: var(--ink-primary); background: var(--surface-base); }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; }
+  :focus-visible { outline: 2px solid var(--accent-sulfur); outline-offset: 2px; }
+
+  .app-shell { display: grid; grid-template-columns: 248px 1fr; min-height: 100vh; }
+
+  .sidebar { background: var(--surface-sidebar); padding: 24px 16px; display: flex; flex-direction: column; }
+  .sidebar-brand { font-family: var(--font-display); font-weight: 900; font-size: 16px; letter-spacing: 0.12em; color: var(--ink-inverse); text-transform: uppercase; padding: 8px 12px 24px; }
+  .sidebar-brand span { color: var(--accent-sulfur); }
+  .sidebar-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+  .sidebar-link { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--radius-sm); color: var(--ink-inverse-muted); font-size: 14px; font-weight: 500; }
+  .sidebar-link:hover { background: var(--surface-sidebar-active); color: var(--ink-inverse); }
+  .sidebar-link.active { background: var(--surface-sidebar-active); color: var(--ink-inverse); box-shadow: inset 3px 0 0 var(--accent-sulfur); }
+  .sidebar-link svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .sidebar-foot { font-family: var(--font-mono); font-size: 11px; color: var(--ink-inverse-muted); padding: 12px; border-top: 1px solid rgba(242,239,231,0.08); }
+
+  .main { display: flex; flex-direction: column; min-width: 0; }
+
+  .order-shell { display: grid; grid-template-columns: 1fr 360px; flex: 1; min-height: 0; }
+
+  /* ---- Left: table context + menu ---- */
+  .order-main { padding: 24px 28px 32px; overflow-y: auto; }
+  .order-context { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 20px; }
+  .order-context h1 { font-family: var(--font-display); font-weight: 700; font-size: 22px; margin: 0; }
+  .order-context .meta { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-secondary); }
+
+  .tab-row { display: flex; gap: 8px; margin-bottom: 22px; flex-wrap: wrap; }
+  .tab {
+    font-size: 13.5px; font-weight: 600; padding: 8px 16px;
+    border-radius: 100px; border: 1px solid var(--border-subtle);
+    color: var(--ink-secondary); background: var(--surface-card); cursor: pointer;
+  }
+  .tab.active { background: var(--ink-primary); color: var(--ink-inverse); border-color: var(--ink-primary); }
+
+  .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+  .menu-item-card {
+    background: var(--surface-card); border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md); padding: 16px; box-shadow: var(--shadow-card);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .menu-item-swatch {
+    height: 64px; border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, var(--accent-sulfur-soft), var(--accent-rust-soft));
+  }
+  .menu-item-name { font-size: 14px; font-weight: 600; line-height: 1.3; }
+  .menu-item-row { display: flex; align-items: center; justify-content: space-between; }
+  .menu-item-price { font-family: var(--font-mono); font-weight: 600; font-size: 14px; }
+  .add-btn {
+    width: 30px; height: 30px; border-radius: 50%;
+    border: none; background: var(--ink-primary); color: var(--ink-inverse);
+    font-size: 17px; line-height: 1; cursor: pointer;
+  }
+  .add-btn:hover { background: var(--accent-sulfur-ink); }
+
+  /* ---- Right: order / receipt panel ---- */
+  .order-panel {
+    background: var(--surface-card);
+    border-left: 1px solid var(--border-subtle);
+    display: flex; flex-direction: column;
+  }
+  .order-panel-head { padding: 22px 22px 14px; border-bottom: 1px solid var(--border-subtle); }
+  .order-panel-head .eyebrow { font-family: var(--font-mono); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-secondary); }
+  .order-panel-head h2 { font-family: var(--font-display); font-size: 18px; font-weight: 700; margin: 4px 0 0; }
+
+  .order-lines { flex: 1; overflow-y: auto; padding: 6px 22px; }
+  .order-line { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-subtle); }
+  .order-line:last-child { border-bottom: none; }
+  .order-line-name { font-size: 14px; font-weight: 500; }
+  .order-line-qty { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-secondary); margin-top: 2px; }
+  .order-line-price { font-family: var(--font-mono); font-size: 14px; font-weight: 600; }
+
+  .qty-stepper { display: flex; align-items: center; gap: 8px; }
+  .qty-stepper button {
+    width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border-strong);
+    background: var(--surface-card); font-size: 13px; cursor: pointer; line-height: 1;
+  }
+
+  .order-summary { padding: 16px 22px 22px; border-top: 1px dashed var(--border-strong); }
+  .order-summary-row { display: flex; justify-content: space-between; font-size: 13.5px; color: var(--ink-secondary); padding: 4px 0; }
+  .order-summary-row .val { font-family: var(--font-mono); }
+  .order-divider { border: none; border-top: 1px dashed var(--border-strong); margin: 10px 0; }
+  .order-total-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 18px; }
+  .order-total-label { font-family: var(--font-display); font-weight: 700; font-size: 15px; }
+  .order-total-value { font-family: var(--font-mono); font-weight: 600; font-size: 26px; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; font-size: 14px; padding: 13px 18px; border-radius: var(--radius-sm); border: 1px solid transparent; cursor: pointer; width: 100%; }
+  .btn-primary { background: var(--ink-primary); color: var(--ink-inverse); margin-bottom: 10px; }
+  .btn-primary:hover { background: #2c2820; }
+  .btn-ghost { background: transparent; border-color: var(--border-strong); color: var(--ink-secondary); }
+  .btn-ghost:hover { background: var(--accent-rust-soft); color: var(--accent-rust-ink); border-color: var(--accent-rust-soft); }
+
+  @media (max-width: 980px) {
+    .order-shell { grid-template-columns: 1fr; }
+    .order-panel { border-left: none; border-top: 1px solid var(--border-subtle); }
+  }
+  @media (max-width: 720px) {
+    .app-shell { grid-template-columns: 72px 1fr; }
+    .sidebar-brand, .sidebar-link span.label, .sidebar-foot { display: none; }
+    .sidebar-link { justify-content: center; }
+    .order-main { padding: 18px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">Dall<span>o</span>l</div>
+    <nav class="sidebar-nav">
+      <a class="sidebar-link" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span class="label">Dashboard</span></a>
+      <a class="sidebar-link active" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 4h14l-1.5 9h-11L5 4Z"/><path d="M9 17a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm7 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z"/></svg><span class="label">Orders</span></a>
+      <a class="sidebar-link" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg><span class="label">Tables</span></a>
+      <a class="sidebar-link" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5V6a2 2 0 0 1 2-2h9l5 5v10.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19.5Z"/><path d="M8 9h5M8 13h8M8 17h8"/></svg><span class="label">Menu</span></a>
+      <a class="sidebar-link" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M11 20V4M18 20v-7"/></svg><span class="label">Reports</span></a>
+      <a class="sidebar-link" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg><span class="label">Staff</span></a>
+    </nav>
+    <div class="sidebar-foot">v2.0 · Dallol Tech</div>
+  </aside>
+
+  <div class="main">
+    <div class="order-shell">
+      <div class="order-main">
+        <div class="order-context">
+          <h1>Table 05</h1>
+          <div class="meta">4 guests · Opened 1:48 PM · Cashier: Selam</div>
+        </div>
+
+        <div class="tab-row">
+          <button class="tab active">All</button>
+          <button class="tab">Starters</button>
+          <button class="tab">Mains</button>
+          <button class="tab">Drinks</button>
+          <button class="tab">Desserts</button>
+        </div>
+
+        <div class="menu-grid">
+          <div class="menu-item-card"><div class="menu-item-swatch"></div><div class="menu-item-name">Doro Wat</div><div class="menu-item-row"><span class="menu-item-price">ETB 320</span><button class="add-btn" aria-label="Add Doro Wat">+</button></div></div>
+          <div class="menu-item-card"><div class="menu-item-swatch"></div><div class="menu-item-name">Tibs Special</div><div class="menu-item-row"><span class="menu-item-price">ETB 280</span><button class="add-btn" aria-label="Add Tibs Special">+</button></div></div>
+          <div class="menu-item-card"><div class="menu-item-swatch"></div><div class="menu-item-name">Shiro Fitfit</div><div class="menu-item-row"><span class="menu-item-price">ETB 190</span><button class="add-btn" aria-label="Add Shiro Fitfit">+</button></div></div>
+          <div class="menu-item-card"><div class="menu-item-swatch"></div><div class="menu-item-name">Kitfo</div><div class="menu-item-row"><span class="menu-item-price">ETB 350</span><button class="add-btn" aria-label="Add Kitfo">+</button></div></div>
+          <div class="menu-item-card"><div class="menu-item-swatch"></div><div class="menu-item-name">Fresh Juice</div><div class="menu-item-row"><span class="menu-item-price">ETB 90</span><button class="add-btn" aria-label="Add Fresh Juice">+</button></div></div>
+          <div class="menu-item-card"><div class="menu-item-swatch"></div><div class="menu-item-name">Sparkling Water</div><div class="menu-item-row"><span class="menu-item-price">ETB 60</span><button class="add-btn" aria-label="Add Sparkling Water">+</button></div></div>
+          <div class="menu-item-card"><div class="menu-item-swatch"></div><div class="menu-item-name">Baklava</div><div class="menu-item-row"><span class="menu-item-price">ETB 110</span><button class="add-btn" aria-label="Add Baklava">+</button></div></div>
+          <div class="menu-item-card"><div class="menu-item-swatch"></div><div class="menu-item-name">Macchiato</div><div class="menu-item-row"><span class="menu-item-price">ETB 70</span><button class="add-btn" aria-label="Add Macchiato">+</button></div></div>
+        </div>
+      </div>
+
+      <aside class="order-panel">
+        <div class="order-panel-head">
+          <div class="eyebrow">Current order · #1042</div>
+          <h2>Table 05</h2>
+        </div>
+
+        <div class="order-lines">
+          <div class="order-line">
+            <div>
+              <div class="order-line-name">Doro Wat</div>
+              <div class="qty-stepper"><button aria-label="Decrease">−</button><span class="order-line-qty">×2</span><button aria-label="Increase">+</button></div>
+            </div>
+            <div class="order-line-price">ETB 640</div>
+          </div>
+          <div class="order-line">
+            <div>
+              <div class="order-line-name">Fresh Juice</div>
+              <div class="qty-stepper"><button aria-label="Decrease">−</button><span class="order-line-qty">×1</span><button aria-label="Increase">+</button></div>
+            </div>
+            <div class="order-line-price">ETB 90</div>
+          </div>
+          <div class="order-line">
+            <div>
+              <div class="order-line-name">Baklava</div>
+              <div class="qty-stepper"><button aria-label="Decrease">−</button><span class="order-line-qty">×1</span><button aria-label="Increase">+</button></div>
+            </div>
+            <div class="order-line-price">ETB 110</div>
+          </div>
+        </div>
+
+        <div class="order-summary">
+          <div class="order-summary-row"><span>Subtotal</span><span class="val">ETB 840</span></div>
+          <div class="order-summary-row"><span>Service (0%)</span><span class="val">ETB 0</span></div>
+          <hr class="order-divider">
+          <div class="order-total-row">
+            <span class="order-total-label">Total</span>
+            <span class="order-total-value">ETB 840</span>
+          </div>
+          <button class="btn btn-primary">Send to kitchen</button>
+          <button class="btn btn-ghost">Cancel order</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

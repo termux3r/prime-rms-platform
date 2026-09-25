@@ -21,6 +21,7 @@ class BillModel extends Model
         'payment_status',
         'payment_method',
         'paid_at',
+        'created_at',
     ];
     protected $useTimestamps    = true;
     protected $createdField     = 'created_at';

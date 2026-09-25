@@ -19,22 +19,21 @@ class MenuCategoryController extends BaseController
      */
     public function index(): ResponseInterface
     {
-        $page      = max(1, (int) $this->request->getGet('page') ?? 1);
-        $perPage   = min(100, max(1, (int) $this->request->getGet('per_page') ?? 20));
+        $page      = max(1, (int) ($this->request->getGet('page') ?: 1));
+        $perPage   = min(100, max(1, (int) ($this->request->getGet('per_page') ?: 20)));
         $search    = $this->request->getGet('search') ?? '';
         $status    = $this->request->getGet('status') ?? '';
 
         $model = new \App\Models\MenuCategoryModel();
-        $builder = $model->builder();
 
         if ($search) {
-            $builder->like('name', $search);
+            $model->like('name', $search);
         }
         if ($status) {
-            $builder->where('status', $status);
+            $model->where('status', $status);
         }
 
-        $categories = $model->paginate($perPage, 'default', $page);
+        $categories = $model->orderBy('name', 'ASC')->paginate($perPage, 'default', $page);
         $pager = $model->pager;
 
         return $this->respond([
@@ -72,7 +71,7 @@ class MenuCategoryController extends BaseController
      */
     public function create(): ResponseInterface
     {
-        $data = $this->body();
+        $data = $this->request->getJSON(true) ?? $this->request->getPost();
 
         if (empty($data['name'])) {
             return $this->respond([
@@ -82,6 +81,8 @@ class MenuCategoryController extends BaseController
         }
 
         $model = new \App\Models\MenuCategoryModel();
+        // Instead of calling $this->menuCategoryModel->getAllowedFields():
+$data = $this->request->getJSON(true);
 
         if (! $model->insert($data)) {
             return $this->respond([
@@ -114,7 +115,8 @@ class MenuCategoryController extends BaseController
             ], 404);
         }
 
-        $data = $this->body();
+        $data = $this->request->getJSON(true) ?? $this->request->getPost();
+        $data = $this->request->getJSON(true);
 
         if (empty($data)) {
             return $this->respond([
