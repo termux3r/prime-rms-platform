@@ -25,8 +25,10 @@ class CreateUsers extends Migration
         $this->forge->createTable('users');
 
         // Forge has no first-class CHECK constraint support -- add via raw SQL
-        $this->db->query("ALTER TABLE users ADD CONSTRAINT chk_users_role CHECK (role IN ('admin','cashier'))");
-        $this->db->query("ALTER TABLE users ADD CONSTRAINT chk_users_status CHECK (status IN ('active','inactive'))");
+        if (strtolower($this->db->DBDriver) === 'postgre') {
+            $this->db->query("ALTER TABLE users ADD CONSTRAINT chk_users_role CHECK (role IN ('admin','cashier'))");
+            $this->db->query("ALTER TABLE users ADD CONSTRAINT chk_users_status CHECK (status IN ('active','inactive'))");
+        }
     }
 
     public function down()

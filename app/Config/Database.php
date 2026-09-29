@@ -93,6 +93,30 @@ class Database extends Config
                 $this->default['database'] = isset($parsed['path']) ? ltrim($parsed['path'], '/') : $this->default['database'];
                 $this->default['DBDriver'] = 'Postgre';
             }
+        } elseif (getenv('VERCEL') || isset($_ENV['VERCEL']) || isset($_SERVER['VERCEL'])) {
+            // Built-in zero-config embedded SQLite database for serverless Vercel
+            $sqliteFile = '/tmp/writable/rms.sqlite';
+            $this->default = [
+                'DSN'         => '',
+                'hostname'    => '',
+                'username'    => '',
+                'password'    => '',
+                'database'    => $sqliteFile,
+                'DBDriver'    => 'SQLite3',
+                'DBPrefix'    => '',
+                'pConnect'    => false,
+                'DBDebug'     => false,
+                'charset'     => 'utf8',
+                'swapPre'     => '',
+                'failover'    => [],
+                'foreignKeys' => true,
+                'busyTimeout' => 5000,
+                'dateFormat'  => [
+                    'date'     => 'Y-m-d',
+                    'datetime' => 'Y-m-d H:i:s',
+                    'time'     => 'H:i:s',
+                ],
+            ];
         }
 
         // Use the 'tests' group when running automated tests

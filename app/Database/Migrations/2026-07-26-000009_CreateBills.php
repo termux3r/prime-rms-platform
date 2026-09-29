@@ -22,8 +22,10 @@ class CreateBills extends Migration
         $this->forge->addForeignKey('order_id', 'orders', 'id');
         $this->forge->createTable('bills');
 
-        $this->db->query("ALTER TABLE bills ADD CONSTRAINT chk_bills_payment_status CHECK (payment_status IN ('unpaid','paid'))");
-        $this->db->query("ALTER TABLE bills ADD CONSTRAINT chk_bills_payment_method CHECK (payment_method IN ('cash','card','mobile'))");
+        if (strtolower($this->db->DBDriver) === 'postgre') {
+            $this->db->query("ALTER TABLE bills ADD CONSTRAINT chk_bills_payment_status CHECK (payment_status IN ('unpaid','paid'))");
+            $this->db->query("ALTER TABLE bills ADD CONSTRAINT chk_bills_payment_method CHECK (payment_method IN ('cash','card','mobile'))");
+        }
         $this->db->query("CREATE INDEX idx_bills_paid_at ON bills(paid_at)");
     }
 

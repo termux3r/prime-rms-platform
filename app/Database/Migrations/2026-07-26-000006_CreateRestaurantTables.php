@@ -20,7 +20,9 @@ class CreateRestaurantTables extends Migration
         $this->forge->addPrimaryKey('id');
         $this->forge->addUniqueKey('table_number');
         $this->forge->createTable('restaurant_tables');
-        $this->db->query("ALTER TABLE restaurant_tables ADD CONSTRAINT chk_tables_status CHECK (status IN ('available','occupied'))");
+        if (strtolower($this->db->DBDriver) === 'postgre') {
+            $this->db->query("ALTER TABLE restaurant_tables ADD CONSTRAINT chk_tables_status CHECK (status IN ('available','occupied'))");
+        }
     }
 
     public function down()

@@ -22,7 +22,9 @@ class CreateOrders extends Migration
         $this->forge->addForeignKey('cashier_id', 'users', 'id');
         $this->forge->createTable('orders');
 
-        $this->db->query("ALTER TABLE orders ADD CONSTRAINT chk_orders_status CHECK (status IN ('pending','completed','paid','cancelled'))");
+        if (strtolower($this->db->DBDriver) === 'postgre') {
+            $this->db->query("ALTER TABLE orders ADD CONSTRAINT chk_orders_status CHECK (status IN ('pending','completed','paid','cancelled'))");
+        }
         // Business rule: one active order per table -- enforced at the DB level, not just app code
         $this->db->query("CREATE UNIQUE INDEX one_active_order_per_table ON orders (table_id) WHERE status IN ('pending','completed')");
         $this->db->query("CREATE INDEX idx_orders_table ON orders(table_id)");

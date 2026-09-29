@@ -23,8 +23,10 @@ class CreateMenuItems extends Migration
         $this->forge->addPrimaryKey('id');
         $this->forge->addForeignKey('category_id', 'menu_categories', 'id', false, 'RESTRICT');
         $this->forge->createTable('menu_items');
-        $this->db->query("ALTER TABLE menu_items ADD CONSTRAINT chk_menu_items_status CHECK (status IN ('active','inactive'))");
-        $this->db->query("ALTER TABLE menu_items ADD CONSTRAINT chk_menu_items_price CHECK (price >= 0)");
+        if (strtolower($this->db->DBDriver) === 'postgre') {
+            $this->db->query("ALTER TABLE menu_items ADD CONSTRAINT chk_menu_items_status CHECK (status IN ('active','inactive'))");
+            $this->db->query("ALTER TABLE menu_items ADD CONSTRAINT chk_menu_items_price CHECK (price >= 0)");
+        }
         $this->db->query("CREATE INDEX idx_menu_items_category ON menu_items(category_id)");
     }
 

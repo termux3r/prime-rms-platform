@@ -19,7 +19,9 @@ class CreateMenuCategories extends Migration
         ]);
         $this->forge->addPrimaryKey('id');
         $this->forge->createTable('menu_categories');
-        $this->db->query("ALTER TABLE menu_categories ADD CONSTRAINT chk_menu_categories_status CHECK (status IN ('active','inactive'))");
+        if (strtolower($this->db->DBDriver) === 'postgre') {
+            $this->db->query("ALTER TABLE menu_categories ADD CONSTRAINT chk_menu_categories_status CHECK (status IN ('active','inactive'))");
+        }
     }
 
     public function down()

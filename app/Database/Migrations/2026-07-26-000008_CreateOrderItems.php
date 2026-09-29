@@ -21,7 +21,9 @@ class CreateOrderItems extends Migration
         $this->forge->addForeignKey('menu_item_id', 'menu_items', 'id');
         $this->forge->createTable('order_items');
 
-        $this->db->query("ALTER TABLE order_items ADD CONSTRAINT chk_order_items_qty CHECK (quantity > 0)");
+        if (strtolower($this->db->DBDriver) === 'postgre') {
+            $this->db->query("ALTER TABLE order_items ADD CONSTRAINT chk_order_items_qty CHECK (quantity > 0)");
+        }
         $this->db->query("CREATE INDEX idx_order_items_order ON order_items(order_id)");
         $this->db->query("CREATE INDEX idx_order_items_menu_item ON order_items(menu_item_id)");
     }
