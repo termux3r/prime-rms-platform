@@ -49,6 +49,11 @@ class AuthController extends BaseController
                 'status'  => 'error',
                 'message' => $e->getMessage(),
             ], $e->getCode() ?: 401);
+        } catch (\Throwable $e) {
+            return $this->respond([
+                'status'  => 'error',
+                'message' => $e->getMessage(),
+            ], 500);
         }
     }
 
