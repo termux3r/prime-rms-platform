@@ -108,4 +108,14 @@ class App extends BaseConfig
     public int $maxAge                = 86400;
     public bool $routerCaseInsensitive = true;
     public bool $strictURI            = false;
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        $vercelUrl = getenv('VERCEL_URL') ?: ($_ENV['VERCEL_URL'] ?? null);
+        if ($vercelUrl && empty(getenv('app.baseURL'))) {
+            $this->baseURL = 'https://' . rtrim($vercelUrl, '/') . '/';
+        }
+    }
 }

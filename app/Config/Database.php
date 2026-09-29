@@ -81,6 +81,20 @@ class Database extends Config
     {
         parent::__construct();
 
+        // Support standard PostgreSQL URL (Neon, Supabase, Vercel Postgres, Railway)
+        $dbUrl = getenv('DATABASE_URL') ?: getenv('POSTGRES_URL') ?: ($_ENV['DATABASE_URL'] ?? ($_ENV['POSTGRES_URL'] ?? null));
+        if ($dbUrl) {
+            $parsed = parse_url($dbUrl);
+            if ($parsed) {
+                $this->default['hostname'] = $parsed['host'] ?? $this->default['hostname'];
+                $this->default['port']     = isset($parsed['port']) ? (int) $parsed['port'] : 5432;
+                $this->default['username'] = isset($parsed['user']) ? urldecode($parsed['user']) : $this->default['username'];
+                $this->default['password'] = isset($parsed['pass']) ? urldecode($parsed['pass']) : $this->default['password'];
+                $this->default['database'] = isset($parsed['path']) ? ltrim($parsed['path'], '/') : $this->default['database'];
+                $this->default['DBDriver'] = 'Postgre';
+            }
+        }
+
         // Use the 'tests' group when running automated tests
         if (ENVIRONMENT === 'testing') {
             $this->defaultGroup = 'tests';

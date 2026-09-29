@@ -12,3 +12,6 @@ writable/debugbar/*
 .phpunit.result.cache
 .continue/
 .vercel
+
+.vercel
+.env*
